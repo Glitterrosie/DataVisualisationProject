@@ -10,3 +10,5 @@
 streamlit run src/main.py
 
 https://doodleclouds.medium.com/using-github-pages-to-host-your-streamlit-app-f274cbe3b3af
+
+https://glitterrosie-datavisualisationproject-srcmain-qbhprc.streamlit.app/

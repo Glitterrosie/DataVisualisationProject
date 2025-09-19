@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 
-st.title("Chart Example")
+st.title("Chart Example Test")
 
 fig, ax = plt.subplots()
 
