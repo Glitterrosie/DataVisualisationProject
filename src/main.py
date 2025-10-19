@@ -15,7 +15,13 @@ def load_data():
     df = pd.read_csv("data/greenhouse_gas_with_population.csv")
     return df
 
+@st.cache_data
+def load_sector_data():
+    df_sector = pd.read_csv("data/greenhouse_gas_per_sector.csv")
+    return df_sector
+
 df = load_data()
+df_sector = load_sector_data()
 
 # --- Basic checks / preprocessing ---
 required_cols = {"year", "iso_code", "Name", "emissions_per_capita", "emissions"}
@@ -287,6 +293,117 @@ fig.update_geos(
 )
 
 # ----------------------------------------------------
-# Display in Streamlit
+# Display in Streamlit with click events
 # ----------------------------------------------------
-st.plotly_chart(fig, use_container_width=True)
+# Initialize session state for selected country
+if 'selected_country' not in st.session_state:
+    st.session_state.selected_country = None
+
+clicked_data = st.plotly_chart(fig, use_container_width=True, on_select="rerun", key="emissions_chart")
+
+# ----------------------------------------------------
+# Handle country click and display information
+# ----------------------------------------------------
+st.markdown("---")
+st.subheader("📊 Country Details")
+
+# Update selected country if a new one was clicked
+if clicked_data and "selection" in clicked_data and "points" in clicked_data["selection"]:
+    points = clicked_data["selection"]["points"]
+    if len(points) > 0:
+        clicked_point = points[0]
+        if "location" in clicked_point:
+            st.session_state.selected_country = clicked_point["location"]
+
+# Display information for the selected country
+if st.session_state.selected_country:
+    clicked_iso = st.session_state.selected_country
+    
+    # Get country data for all years
+    country_data = df[df["iso_code"] == clicked_iso].sort_values("year")
+    
+    if not country_data.empty:
+        country_name = country_data.iloc[0]["Name"]
+        
+        # Display current information
+        col_header1, col_header2 = st.columns([3, 1])
+        with col_header1:
+            st.markdown(f"### {country_name}")
+        with col_header2:
+            if st.button("Clear Selection"):
+                st.session_state.selected_country = None
+                st.rerun()
+        
+        # Detect current year from slider
+        # The slider's active state corresponds to the current year
+        if "current_year" not in st.session_state:
+            st.session_state.current_year = max_year
+        
+        # Use max_year as current display year (this updates with slider)
+        display_year = max_year  # This will be the year shown on map
+        
+        # Get data for the display year
+        year_data = country_data[country_data["year"] == display_year]
+        
+        if not year_data.empty:
+            year_info = year_data.iloc[0]
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Selected Year", int(display_year))
+            with col2:
+                st.metric("Emissions per Capita", f"{year_info['emissions_per_capita']:.2f} tCO₂e")
+            with col3:
+                st.metric("Total Emissions", f"{year_info['emissions']:.2f} MtCO₂e")
+            
+            # Get sector data for this country and year
+            country_sector_data = df_sector[
+                (df_sector["iso_code"] == clicked_iso) & 
+                (df_sector["year"] == display_year)
+            ]
+            
+            if not country_sector_data.empty:
+                # Aggregate by sector (sum across all gases)
+                sector_totals = country_sector_data.groupby("sector", as_index=False)["emissions"].sum()
+                sector_totals = sector_totals.sort_values("emissions", ascending=True)
+                
+                # Create horizontal bar chart
+                fig_sector = go.Figure()
+                
+                fig_sector.add_trace(go.Bar(
+                    y=sector_totals["sector"],
+                    x=sector_totals["emissions"],
+                    orientation='h',
+                    marker=dict(
+                        color=sector_totals["emissions"],
+                        colorscale='Reds',
+                        showscale=False
+                    ),
+                    text=sector_totals["emissions"].round(2),
+                    texttemplate='%{text} MtCO₂e',
+                    textposition='outside',
+                    hovertemplate='<b>%{y}</b><br>Emissions: %{x:.2f} MtCO₂e<extra></extra>'
+                ))
+                
+                fig_sector.update_layout(
+                    title=f"Emissions by Sector in {int(display_year)}",
+                    xaxis_title="Emissions (MtCO₂e)",
+                    yaxis_title="Sector",
+                    height=400,
+                    template="plotly_white",
+                    margin=dict(l=10, r=150, t=40, b=40),
+                    showlegend=False
+                )
+                
+                st.plotly_chart(fig_sector, use_container_width=True)
+                
+                st.info("💡 Use the year slider above to see how sector emissions change over time")
+            else:
+                st.warning(f"No sector data available for {country_name} in {int(display_year)}")
+        else:
+            st.warning(f"No data available for {country_name} in {int(display_year)}")
+    else:
+        st.warning(f"No data available for the selected country")
+        st.session_state.selected_country = None
+else:
+    st.info("👆 Click on a country in the map above to see detailed information")
