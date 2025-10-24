@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Global Greenhouse Gas Emissions</title>
+    <title>CO₂ Emissions Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
@@ -15,231 +15,271 @@
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-        padding: 20px;
+        background: #f8f9fa;
+        padding: 25px;
+        color: #1e293b;
       }
       .container {
-        max-width: 1600px;
+        max-width: 1800px;
         margin: 0 auto;
       }
       .header {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        padding: 40px;
-        border-radius: 24px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        text-align: center;
         margin-bottom: 30px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       }
       .header h1 {
-        font-size: 3em;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 10px;
-        font-weight: 800;
+        font-size: 2.2em;
+        color: #1e293b;
+        margin-bottom: 5px;
+        font-weight: 700;
       }
       .header p {
         color: #64748b;
-        font-size: 1.2em;
+        font-size: 1em;
       }
+
       .card {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        padding: 30px;
-        border-radius: 24px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        margin-bottom: 30px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        margin-bottom: 20px;
       }
-      .card h2 {
-        font-size: 1.8em;
+
+      .card-header {
+        font-size: 1.3em;
+        font-weight: 600;
         color: #1e293b;
         margin-bottom: 20px;
-        font-weight: 700;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f1f5f9;
       }
-      .slider-header {
+
+      .main-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      .chart-section {
+        display: flex;
+        flex-direction: column;
+      }
+
+      #lineChart {
+        width: 100%;
+        height: 400px;
+        margin-bottom: 0;
+      }
+
+      .year-control-wrapper {
+        margin-top: 25px;
+        padding: 0 70px;
+      }
+
+      .year-info {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        margin-bottom: 12px;
+      }
+
+      .year-label {
+        font-size: 0.9em;
+        font-weight: 600;
+        color: #64748b;
+      }
+
+      .year-display {
+        font-size: 1.8em;
+        font-weight: 700;
+        color: #3b82f6;
+        min-width: 80px;
+        text-align: center;
+      }
+
+      #yearSlider {
+        width: 100%;
+        height: 6px;
+        border-radius: 3px;
+        outline: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+        background: #e2e8f0;
+        margin-bottom: 8px;
+      }
+      #yearSlider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #3b82f6;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+      }
+      #yearSlider::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #3b82f6;
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+      }
+
+      .year-marks {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.7em;
+        color: #94a3b8;
+        font-weight: 600;
+      }
+
+      #worldMap {
+        width: 100%;
+        height: 575px;
+      }
+
+      .country-details {
+        animation: slideIn 0.3s ease-out;
+      }
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .country-header-section {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
       }
-      .slider-label {
-        font-size: 1.4em;
-        font-weight: 700;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
-      .slider-hint {
-        font-size: 1em;
-        color: #64748b;
-      }
-      #yearSlider {
-        width: 100%;
-        height: 14px;
-        border-radius: 7px;
-        outline: none;
-        -webkit-appearance: none;
-        cursor: pointer;
-        background: linear-gradient(to right, #667eea 0%, #764ba2 100%);
-      }
-      #yearSlider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: white;
-        cursor: pointer;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        border: 3px solid #667eea;
-      }
-      #yearSlider::-moz-range-thumb {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: white;
-        cursor: pointer;
-        border: 3px solid #667eea;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      }
-      .year-marks {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 12px;
-        font-size: 0.95em;
-        color: #64748b;
-        font-weight: 600;
-      }
-      .country-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: start;
-        margin-bottom: 25px;
-      }
-      .country-title h2 {
-        font-size: 2.2em;
+      .country-title-section h2 {
+        font-size: 1.8em;
         color: #1e293b;
-        font-weight: 800;
+        font-weight: 700;
       }
-      .country-title p {
+      .country-title-section p {
         color: #64748b;
-        margin-top: 8px;
-        font-size: 1.1em;
+        font-size: 0.95em;
+        margin-top: 4px;
       }
       .close-btn {
-        padding: 12px 16px;
+        padding: 8px 14px;
         background: #f1f5f9;
         border: none;
-        border-radius: 12px;
+        border-radius: 8px;
         cursor: pointer;
-        font-size: 1.3em;
+        font-size: 1em;
+        font-weight: 600;
+        color: #64748b;
         transition: all 0.2s;
       }
       .close-btn:hover {
         background: #e2e8f0;
         transform: scale(1.05);
       }
-      .metrics-grid {
+
+      .metrics {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 20px;
-        margin-bottom: 30px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-bottom: 25px;
       }
-      .metric {
-        padding: 25px;
-        border-radius: 16px;
+      .metric-card {
+        padding: 20px;
+        border-radius: 10px;
         text-align: center;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+      .metric-card.blue {
+        background: #eff6ff;
+        border-left: 4px solid #3b82f6;
+      }
+      .metric-card.red {
+        background: #fef2f2;
+        border-left: 4px solid #ef4444;
+      }
+      .metric-card.purple {
+        background: #faf5ff;
+        border-left: 4px solid #a855f7;
       }
       .metric-label {
-        font-size: 1em;
+        font-size: 0.8em;
+        color: #64748b;
         font-weight: 600;
-        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
       }
       .metric-value {
-        font-size: 2.2em;
-        font-weight: 800;
+        font-size: 1.8em;
+        font-weight: 700;
+        color: #1e293b;
       }
       .metric-unit {
         font-size: 0.5em;
+        color: #64748b;
         font-weight: 600;
       }
-      .metric-blue {
-        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-        color: #1e40af;
-      }
-      .metric-red {
-        background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
-        color: #991b1b;
-      }
-      .metric-purple {
-        background: linear-gradient(135deg, #e9d5ff 0%, #d8b4fe 100%);
-        color: #6b21a8;
-      }
-      .sector-bar {
-        display: flex;
-        align-items: center;
+
+      .sector-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
         gap: 20px;
-        margin-bottom: 16px;
+      }
+      .sector-bars {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .sector-row {
+        display: grid;
+        grid-template-columns: 110px 1fr auto;
+        align-items: center;
+        gap: 12px;
       }
       .sector-name {
-        width: 140px;
-        font-size: 1em;
+        font-size: 0.85em;
         font-weight: 600;
-        color: #1e293b;
+        color: #475569;
       }
-      .sector-bar-container {
-        flex: 1;
-        height: 40px;
-        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-        border-radius: 20px;
-        position: relative;
+      .sector-bar-bg {
+        height: 24px;
+        background: #f1f5f9;
+        border-radius: 12px;
         overflow: hidden;
-        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
       }
       .sector-bar-fill {
         height: 100%;
-        background: linear-gradient(135deg, #f87171 0%, #dc2626 100%);
-        border-radius: 20px;
-        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+        background: linear-gradient(90deg, #f87171, #dc2626);
+        border-radius: 12px;
+        transition: width 0.5s ease;
       }
-      .sector-bar-label {
-        position: absolute;
-        top: 50%;
-        left: 20px;
-        transform: translateY(-50%);
-        font-size: 0.9em;
+      .sector-value {
+        font-size: 0.8em;
         font-weight: 700;
         color: #1e293b;
-        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+        white-space: nowrap;
       }
-      .info-box {
-        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-        border: 2px solid #93c5fd;
-        border-radius: 20px;
-        padding: 25px;
-        display: flex;
-        gap: 20px;
-        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
-      }
-      .info-icon {
-        color: #2563eb;
-        font-size: 2em;
-      }
-      .info-content {
-        color: #1e40af;
-        font-size: 1em;
-        line-height: 1.6;
-      }
+
       .spinner {
-        border: 5px solid rgba(255, 255, 255, 0.3);
-        border-top: 5px solid white;
+        border: 4px solid #e2e8f0;
+        border-top: 4px solid #3b82f6;
         border-radius: 50%;
-        width: 60px;
-        height: 60px;
+        width: 50px;
+        height: 50px;
         animation: spin 1s linear infinite;
         margin: 0 auto 20px;
       }
@@ -251,121 +291,80 @@
           transform: rotate(360deg);
         }
       }
-      .error-box {
-        background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
-        border: 2px solid #f87171;
-        border-radius: 20px;
-        padding: 25px;
-        color: #991b1b;
-      }
-      #worldMap {
-        width: 100%;
-        height: 650px;
-        border-radius: 16px;
-        overflow: hidden;
-      }
-      #lineChart {
-        width: 100%;
-        height: 500px;
-      }
     </style>
   </head>
   <body>
     <div class="container">
       <div class="header">
-        <h1>🌍 Global Greenhouse Gas Emissions</h1>
-        <p>
-          Interactive visualization of emissions data and climate goals tracking
-        </p>
+        <h1>🌍 Global Greenhouse Gas Emissions Dashboard</h1>
+        <p>Emissions across countries, regions & sectors • 1990-2023</p>
       </div>
 
-      <div id="loading" class="card" style="text-align: center; padding: 80px">
+      <div id="loading" class="card" style="text-align: center; padding: 60px">
         <div class="spinner"></div>
-        <p style="color: #64748b; font-size: 1.2em; font-weight: 600">
+        <p style="color: #64748b; font-weight: 600">
           Loading emissions data...
         </p>
       </div>
 
       <div id="mainContent" style="display: none">
-        <div class="card">
-          <div class="slider-header">
-            <span class="slider-label"
-              >Year: <span id="currentYear">2023</span></span
-            >
-            <span class="slider-hint">Drag to explore different years</span>
+        <div class="main-grid">
+          <div class="card chart-section">
+            <div class="card-header">Global Emissions Trend</div>
+            <div id="lineChart"></div>
+            <div class="year-control-wrapper">
+              <div class="year-info">
+                <span class="year-label">Selected Year:</span>
+                <div class="year-display" id="currentYear">2023</div>
+              </div>
+              <input
+                type="range"
+                id="yearSlider"
+                min="1990"
+                max="2023"
+                value="2023"
+                step="1"
+              />
+              <div class="year-marks" id="yearMarks"></div>
+            </div>
           </div>
-          <input
-            type="range"
-            id="yearSlider"
-            min="1990"
-            max="2023"
-            value="2023"
-          />
-          <div class="year-marks">
-            <span id="minYear">1990</span>
-            <span id="midYear">2006</span>
-            <span id="maxYear">2023</span>
-          </div>
-        </div>
 
-        <div class="card">
-          <h2>📊 Global Emissions Over Time</h2>
-          <div id="lineChart"></div>
-        </div>
-
-        <div class="card">
-          <h2>
-            🗺️ Emissions Per Capita by Country (<span id="mapYear">2023</span>)
-          </h2>
-          <div id="worldMap"></div>
-        </div>
-
-        <div id="countryDetails" style="display: none"></div>
-
-        <div class="info-box">
-          <div class="info-icon">💡</div>
-          <div class="info-content">
-            <strong>How to use this dashboard:</strong> Drag the year slider to
-            explore emissions across different time periods. Click on any
-            country on the map to view detailed emissions data and sector
-            breakdown. The color intensity represents emissions percentile
-            ranking.
+          <div class="card">
+            <div class="card-header">Emissions Per Capita Map</div>
+            <div id="worldMap"></div>
           </div>
         </div>
+
+        <div class="card" id="countryDetails" style="display: none"></div>
       </div>
     </div>
 
     <script>
-      let allData = [];
-      let sectorData = [];
-      let selectedCountry = null;
-      let selectedContinent = null;
-      let currentYear = 2023;
-      let yearRange = { min: 1990, max: 2023 };
+      let allData = [],
+        sectorData = [],
+        selectedCountry = null,
+        selectedContinent = null,
+        currentYear = 2023,
+        yearRange = { min: 1990, max: 2023 };
 
       async function init() {
         try {
           const mainResponse = await fetch(
             "data/greenhouse_gas_with_population.csv"
           );
-          const mainData = await mainResponse.text();
-
           const sectorResponse = await fetch(
             "data/greenhouse_gas_per_sector.csv"
           );
-          const sectorDataRaw = await sectorResponse.text();
-
-          allData = Papa.parse(mainData, {
+          allData = Papa.parse(await mainResponse.text(), {
             header: true,
             dynamicTyping: true,
             skipEmptyLines: true,
           }).data;
-          sectorData = Papa.parse(sectorDataRaw, {
+          sectorData = Papa.parse(await sectorResponse.text(), {
             header: true,
             dynamicTyping: true,
             skipEmptyLines: true,
           }).data;
-
           allData = allData.filter(
             (row) =>
               row.year &&
@@ -374,15 +373,15 @@
               row.emissions
           );
 
-          // Calculate percentile rank for each row (histogram equalization)
-          const allValues = allData
-            .map((d) => d.emissions_per_capita)
-            .sort((a, b) => a - b);
           allData.forEach((row) => {
-            const rank = allValues.filter(
-              (v) => v <= row.emissions_per_capita
-            ).length;
-            row.emissions_percentile = (rank / allValues.length) * 100;
+            const yearData = allData.filter((d) => d.year === row.year);
+            const values = yearData
+              .map((d) => d.emissions_per_capita)
+              .sort((a, b) => a - b);
+            row.emissions_percentile =
+              (values.filter((v) => v <= row.emissions_per_capita).length /
+                values.length) *
+              100;
           });
 
           const years = [...new Set(allData.map((d) => d.year))].sort(
@@ -398,14 +397,10 @@
           document.getElementById("loading").style.display = "none";
           document.getElementById("mainContent").style.display = "block";
         } catch (error) {
-          console.error("Error loading data:", error);
           document.getElementById("loading").innerHTML =
-            '<div class="error-box">' +
-            "<h3>⚠️ Error Loading Data</h3>" +
-            "<p>Could not load CSV files. Error: " +
+            '<div style="color: #dc2626; padding: 30px;"><h3>Error Loading Data</h3><p>' +
             error.message +
-            "</p>" +
-            "</div>";
+            "</p></div>";
         }
       }
 
@@ -414,18 +409,23 @@
         slider.min = yearRange.min;
         slider.max = yearRange.max;
         slider.value = currentYear;
-        document.getElementById("minYear").textContent = yearRange.min;
-        document.getElementById("midYear").textContent = Math.floor(
-          (yearRange.min + yearRange.max) / 2
-        );
-        document.getElementById("maxYear").textContent = yearRange.max;
         document.getElementById("currentYear").textContent = currentYear;
-        document.getElementById("mapYear").textContent = currentYear;
+
+        const marksContainer = document.getElementById("yearMarks");
+        const totalYears = yearRange.max - yearRange.min + 1;
+        const showEvery = totalYears > 20 ? 5 : 2;
+
+        for (let y = yearRange.min; y <= yearRange.max; y++) {
+          if ((y - yearRange.min) % showEvery === 0 || y === yearRange.max) {
+            const mark = document.createElement("span");
+            mark.textContent = y;
+            marksContainer.appendChild(mark);
+          }
+        }
 
         slider.addEventListener("input", (e) => {
           currentYear = parseInt(e.target.value);
           document.getElementById("currentYear").textContent = currentYear;
-          document.getElementById("mapYear").textContent = currentYear;
           updateWorldMap();
           updateLineChartMarker();
           if (selectedCountry) updateCountryDetails();
@@ -433,117 +433,113 @@
       }
 
       function calculateGlobalTrend() {
-        const yearGroups = {};
+        const yg = {};
         allData.forEach((row) => {
-          if (!yearGroups[row.year]) yearGroups[row.year] = 0;
-          yearGroups[row.year] += row.emissions;
+          if (!yg[row.year]) yg[row.year] = 0;
+          yg[row.year] += row.emissions;
         });
-        return Object.entries(yearGroups)
+        return Object.entries(yg)
           .map(([year, emissions]) => ({
             year: parseInt(year),
-            emissions: emissions,
+            emissions,
             temperature: Math.min(2.5, (emissions / 35000) * 1.5),
           }))
           .sort((a, b) => a.year - b.year);
       }
 
       function calculateContinentTrend(continent) {
-        const yearGroups = {};
+        const yg = {};
         allData
           .filter((row) => row.continent === continent)
           .forEach((row) => {
-            if (!yearGroups[row.year]) yearGroups[row.year] = 0;
-            yearGroups[row.year] += row.emissions;
+            if (!yg[row.year]) yg[row.year] = 0;
+            yg[row.year] += row.emissions;
           });
-        return Object.entries(yearGroups)
+        return Object.entries(yg)
           .map(([year, emissions]) => ({
             year: parseInt(year),
-            emissions: emissions,
+            emissions,
           }))
           .sort((a, b) => a.year - b.year);
       }
 
       function createLineChart() {
-        const globalTrend = calculateGlobalTrend();
-        const maxEmission = Math.max(...globalTrend.map((d) => d.emissions));
+        const gt = calculateGlobalTrend();
+        const maxE = Math.max(...gt.map((d) => d.emissions));
+
         const milestones = [
-          { year: 2015, label: "Paris Agreement" },
-          { year: 2016, label: "Paris Signing" },
+          { year: 2015, label: "Paris" },
           { year: 2018, label: "COP24" },
           { year: 2023, label: "COP28" },
         ];
 
         const traces = [
           {
-            x: globalTrend.map((d) => d.year),
-            y: globalTrend.map((d) => d.emissions),
+            x: gt.map((d) => d.year),
+            y: gt.map((d) => d.emissions),
             type: "scatter",
             mode: "lines",
-            name: "Global Emissions",
-            line: { color: "#667eea", width: 4 },
+            name: "Global",
+            line: { color: "#3b82f6", width: 3 },
             yaxis: "y",
-            fill: "tozeroy",
-            fillcolor: "rgba(102, 126, 234, 0.1)",
           },
           {
-            x: globalTrend.map((d) => d.year),
-            y: globalTrend.map((d) => d.temperature),
+            x: gt.map((d) => d.year),
+            y: gt.map((d) => d.temperature),
             type: "scatter",
             mode: "lines",
-            name: "Temperature",
-            line: { color: "#dc2626", width: 3, dash: "dash" },
+            name: "Temp",
+            line: { color: "#ef4444", width: 2, dash: "dot" },
             yaxis: "y2",
           },
         ];
 
         milestones.forEach((m) => {
-          if (m.year >= yearRange.min && m.year <= yearRange.max) {
-            traces.push({
-              x: [m.year, m.year],
-              y: [0, maxEmission],
-              type: "scatter",
-              mode: "lines",
-              name: m.label,
-              line: { color: "#f97316", width: 2, dash: "dot" },
-              showlegend: false,
-              hovertemplate: "<b>" + m.label + "</b><extra></extra>",
-            });
-          }
+          traces.push({
+            x: [m.year, m.year],
+            y: [0, maxE * 0.95],
+            type: "scatter",
+            mode: "lines",
+            name: m.label,
+            line: { color: "#f59e0b", width: 1, dash: "dot" },
+            showlegend: false,
+            hovertemplate: "<b>" + m.label + "</b><extra></extra>",
+          });
         });
 
         traces.push({
           x: [currentYear, currentYear],
-          y: [0, maxEmission],
+          y: [0, maxE * 0.95],
           type: "scatter",
           mode: "lines",
-          name: "Selected Year",
-          line: { color: "#dc2626", width: 3, dash: "dash" },
+          name: "Selected",
+          line: { color: "#dc2626", width: 2.5, dash: "dash" },
           showlegend: false,
         });
 
         const layout = {
           xaxis: {
-            title: "Year",
-            range: [yearRange.min, yearRange.max],
+            title: "",
             showgrid: true,
-            gridcolor: "#e5e7eb",
-            zeroline: false,
+            gridcolor: "#f1f5f9",
+            range: [yearRange.min - 1, yearRange.max + 1],
+            tickfont: { size: 10 },
           },
           yaxis: {
-            title: "Global Emissions (MtCO₂e)",
+            title: {
+              text: "Emissions (MtCO₂e)",
+              font: { size: 11, color: "#3b82f6" },
+            },
             showgrid: true,
-            gridcolor: "#e5e7eb",
-            titlefont: { color: "#667eea", size: 14, family: "inherit" },
-            tickfont: { color: "#667eea" },
-            zeroline: false,
+            gridcolor: "#f1f5f9",
+            tickfont: { color: "#3b82f6", size: 9 },
           },
           yaxis2: {
-            title: "Temperature Increase (°C)",
+            title: { text: "Temp (°C)", font: { size: 11, color: "#ef4444" } },
             overlaying: "y",
             side: "right",
             range: [0, 2.5],
-            titlefont: { color: "#dc2626", size: 14, family: "inherit" },
-            tickfont: { color: "#dc2626" },
+            tickfont: { color: "#ef4444", size: 9 },
           },
           shapes: [
             {
@@ -553,7 +549,7 @@
               y0: 1.5,
               y1: 1.5,
               yref: "y2",
-              line: { color: "#10b981", width: 3, dash: "dash" },
+              line: { color: "#10b981", width: 2, dash: "dash" },
             },
             {
               type: "line",
@@ -562,7 +558,7 @@
               y0: 2.0,
               y1: 2.0,
               yref: "y2",
-              line: { color: "#f59e0b", width: 3, dash: "dash" },
+              line: { color: "#f59e0b", width: 2, dash: "dash" },
             },
           ],
           annotations: [
@@ -570,25 +566,35 @@
               x: yearRange.max,
               y: 1.5,
               yref: "y2",
-              text: "1.5°C Target",
+              text: "1.5°C",
               showarrow: false,
               xanchor: "left",
-              font: { color: "#10b981", size: 13, family: "inherit" },
+              xshift: 5,
+              font: { color: "#10b981", size: 10 },
             },
             {
               x: yearRange.max,
               y: 2.0,
               yref: "y2",
-              text: "2.0°C Limit",
+              text: "2.0°C",
               showarrow: false,
               xanchor: "left",
-              font: { color: "#f59e0b", size: 13, family: "inherit" },
+              xshift: 5,
+              font: { color: "#f59e0b", size: 10 },
             },
           ],
-          margin: { l: 70, r: 90, t: 20, b: 60 },
+          margin: { l: 70, r: 70, t: 10, b: 40 },
           paper_bgcolor: "rgba(0,0,0,0)",
-          plot_bgcolor: "rgba(0,0,0,0)",
-          font: { family: "inherit" },
+          plot_bgcolor: "#fafafa",
+          legend: {
+            x: 0.02,
+            y: 0.98,
+            bgcolor: "rgba(255,255,255,0.9)",
+            font: { size: 10 },
+            bordercolor: "#e2e8f0",
+            borderwidth: 1,
+          },
+          hovermode: "x unified",
         };
 
         Plotly.newPlot("lineChart", traces, layout, {
@@ -598,100 +604,93 @@
       }
 
       function createWorldMap() {
-        const currentYearData = allData.filter(
-          (row) => row.year === currentYear
-        );
+        const cyd = allData.filter((row) => row.year === currentYear);
 
         const trace = {
           type: "choropleth",
-          locations: currentYearData.map((d) => d.iso_code),
-          z: currentYearData.map((d) => d.emissions_percentile),
-          text: currentYearData.map((d) => d.Name),
-          customdata: currentYearData.map((d) => [
+          locations: cyd.map((d) => d.iso_code),
+          z: cyd.map((d) => d.emissions_percentile),
+          text: cyd.map((d) => d.Name),
+          customdata: cyd.map((d) => [
             d.emissions_per_capita,
             d.iso_code,
+            d.emissions_percentile,
           ]),
           hovertemplate:
-            "<b>%{text}</b><br>Emissions: %{customdata[0]:.2f} tCO₂e per capita<br>Percentile: %{z:.0f}%<extra></extra>",
+            "<b>%{text}</b><br>" +
+            "<b>%{customdata[0]:.2f} tCO₂e</b> per capita<br>" +
+            "Percentile: %{customdata[2]:.0f}%<extra></extra>",
           colorscale: [
-            [0, "#fee2e2"],
-            [0.2, "#fecaca"],
-            [0.4, "#fca5a5"],
-            [0.6, "#f87171"],
-            [0.8, "#ef4444"],
+            [0, "#fef2f2"],
+            [0.15, "#fee2e2"],
+            [0.3, "#fecaca"],
+            [0.5, "#fca5a5"],
+            [0.7, "#f87171"],
+            [0.85, "#ef4444"],
             [1, "#dc2626"],
           ],
           zmin: 0,
           zmax: 100,
           colorbar: {
-            title: {
-              text: "Emissions<br>Percentile",
-              font: { size: 13, family: "inherit" },
-            },
-            thickness: 25,
+            title: { text: "Emission<br>Percentile", font: { size: 10 } },
+            thickness: 15,
             len: 0.7,
             ticksuffix: "%",
+            tickfont: { size: 9 },
           },
-          marker: {
-            line: {
-              color: "white",
-              width: 1,
-            },
-          },
+          marker: { line: { color: "rgba(255,255,255,0.6)", width: 0.5 } },
         };
 
         const layout = {
           geo: {
-            projection: {
-              type: "natural earth",
-            },
-            showcoastlines: true,
-            coastlinecolor: "#94a3b8",
-            coastlinewidth: 1,
+            projection: { type: "natural earth" },
+            showcoastlines: false,
             showland: true,
             landcolor: "#f8fafc",
             showocean: true,
             oceancolor: "#dbeafe",
             showcountries: true,
-            countrycolor: "white",
-            countrywidth: 0.5,
+            countrycolor: "rgba(255,255,255,0.4)",
             bgcolor: "rgba(0,0,0,0)",
+            showframe: false,
           },
           margin: { l: 0, r: 0, t: 0, b: 0 },
           paper_bgcolor: "rgba(0,0,0,0)",
-          height: 650,
+          height: 575,
+          dragmode: false,
         };
 
         Plotly.newPlot("worldMap", [trace], layout, {
           responsive: true,
           displayModeBar: false,
+          scrollZoom: false,
         });
 
         document.getElementById("worldMap").on("plotly_click", function (data) {
           if (data.points && data.points.length > 0) {
-            const point = data.points[0];
-            const iso = point.customdata[1];
-            const countryData = currentYearData.find((d) => d.iso_code === iso);
-            if (countryData) {
-              selectCountry(iso, countryData.continent);
-            }
+            const iso = data.points[0].customdata[1];
+            const cd = allData
+              .filter((row) => row.year === currentYear)
+              .find((d) => d.iso_code === iso);
+            if (cd) selectCountry(iso, cd.continent);
           }
         });
       }
 
       function updateWorldMap() {
-        const currentYearData = allData.filter(
-          (row) => row.year === currentYear
-        );
-
+        const cyd = allData.filter((row) => row.year === currentYear);
         Plotly.update(
           "worldMap",
           {
-            locations: [currentYearData.map((d) => d.iso_code)],
-            z: [currentYearData.map((d) => d.emissions_percentile)],
-            text: [currentYearData.map((d) => d.Name)],
+            locations: [cyd.map((d) => d.iso_code)],
+            z: [cyd.map((d) => d.emissions_percentile)],
+            text: [cyd.map((d) => d.Name)],
             customdata: [
-              currentYearData.map((d) => [d.emissions_per_capita, d.iso_code]),
+              cyd.map((d) => [
+                d.emissions_per_capita,
+                d.iso_code,
+                d.emissions_percentile,
+              ]),
             ],
           },
           {},
@@ -700,44 +699,35 @@
       }
 
       function updateLineChartMarker() {
-        const globalTrend = calculateGlobalTrend();
-        const maxEmission = Math.max(...globalTrend.map((d) => d.emissions));
-        const traceIndex = selectedContinent
+        const gt = calculateGlobalTrend();
+        const maxE = Math.max(...gt.map((d) => d.emissions));
+        const ti = selectedContinent
           ? document.getElementById("lineChart").data.length - 2
           : document.getElementById("lineChart").data.length - 1;
         Plotly.update(
           "lineChart",
-          { x: [[currentYear, currentYear]], y: [[0, maxEmission]] },
+          { x: [[currentYear, currentYear]], y: [[0, maxE * 0.95]] },
           {},
-          [traceIndex]
+          [ti]
         );
       }
 
       function updateContinentLine() {
+        const et = document.getElementById("lineChart").data;
+        const cti = et.findIndex((t) => t.line && t.line.color === "#a855f7");
+        if (cti !== -1) Plotly.deleteTraces("lineChart", cti);
+
         if (selectedContinent) {
-          const continentTrend = calculateContinentTrend(selectedContinent);
-          const existingTraces = document.getElementById("lineChart").data;
-          const hasContinentTrace = existingTraces.some(
-            (t) => t.name === selectedContinent
-          );
-          if (!hasContinentTrace) {
-            Plotly.addTraces("lineChart", {
-              x: continentTrend.map((d) => d.year),
-              y: continentTrend.map((d) => d.emissions),
-              type: "scatter",
-              mode: "lines",
-              name: selectedContinent,
-              line: { color: "#8b5cf6", width: 3 },
-              yaxis: "y",
-            });
-          }
-        } else {
-          const existingTraces = document.getElementById("lineChart").data;
-          const continentTraceIndex = existingTraces.findIndex(
-            (t) => t.line && t.line.color === "#8b5cf6"
-          );
-          if (continentTraceIndex !== -1)
-            Plotly.deleteTraces("lineChart", continentTraceIndex);
+          const ct = calculateContinentTrend(selectedContinent);
+          Plotly.addTraces("lineChart", {
+            x: ct.map((d) => d.year),
+            y: ct.map((d) => d.emissions),
+            type: "scatter",
+            mode: "lines",
+            name: selectedContinent,
+            line: { color: "#a855f7", width: 2.5 },
+            yaxis: "y",
+          });
         }
       }
 
@@ -756,69 +746,71 @@
       }
 
       function updateCountryDetails() {
-        const countryData = allData.find(
+        const cd = allData.find(
           (d) => d.iso_code === selectedCountry && d.year === currentYear
         );
-        if (!countryData) {
-          document.getElementById("countryDetails").style.display = "none";
-          return;
-        }
+        if (!cd) return;
 
-        const countrySectors = {};
+        const cs = {};
         sectorData
           .filter(
             (row) =>
               row.iso_code === selectedCountry && row.year === currentYear
           )
           .forEach((row) => {
-            if (!countrySectors[row.sector]) countrySectors[row.sector] = 0;
-            countrySectors[row.sector] += row.emissions;
+            if (!cs[row.sector]) cs[row.sector] = 0;
+            cs[row.sector] += row.emissions;
           });
-
-        const sectors = Object.entries(countrySectors)
-          .map(([sector, emissions]) => ({
-            sector: sector,
-            emissions: emissions,
-          }))
+        const sectors = Object.entries(cs)
+          .map(([sector, emissions]) => ({ sector, emissions }))
           .sort((a, b) => b.emissions - a.emissions);
-        const maxSectorEmission =
-          sectors.length > 0 ? Math.max(...sectors.map((s) => s.emissions)) : 1;
 
         let sectorHTML = "";
         if (sectors.length > 0) {
+          const maxSE = Math.max(...sectors.map((s) => s.emissions));
+          const half = Math.ceil(sectors.length / 2);
+          const col1 = sectors.slice(0, half);
+          const col2 = sectors.slice(half);
+
           sectorHTML =
-            '<h3 style="margin: 25px 0 20px 0; color: #1e293b; font-size: 1.5em; font-weight: 700;">📈 Emissions by Sector (' +
+            '<div class="card-header">Sector Breakdown (' +
             currentYear +
-            ")</h3>";
-          sectors.forEach((sector) => {
-            const percentage = (sector.emissions / maxSectorEmission) * 100;
-            sectorHTML +=
-              '<div class="sector-bar"><div class="sector-name">' +
-              sector.sector +
-              '</div><div class="sector-bar-container"><div class="sector-bar-fill" style="width: ' +
-              percentage +
-              '%"></div><div class="sector-bar-label">' +
-              sector.emissions.toFixed(2) +
-              " MtCO₂e</div></div></div>";
+            ')</div><div class="sector-grid">';
+          [col1, col2].forEach((col) => {
+            sectorHTML += '<div class="sector-bars">';
+            col.forEach((s) => {
+              const pct = (s.emissions / maxSE) * 100;
+              sectorHTML +=
+                '<div class="sector-row"><div class="sector-name">' +
+                s.sector +
+                '</div><div class="sector-bar-bg"><div class="sector-bar-fill" style="width: ' +
+                pct +
+                '%"></div></div><div class="sector-value">' +
+                s.emissions.toFixed(1) +
+                " Mt</div></div>";
+            });
+            sectorHTML += "</div>";
           });
+          sectorHTML += "</div>";
         }
 
-        const detailsHTML =
-          '<div class="card"><div class="country-header"><div class="country-title"><h2>' +
-          countryData.Name +
+        const html =
+          '<div class="country-header-section"><div class="country-title-section"><h2>' +
+          cd.Name +
           "</h2><p>" +
-          (countryData.continent || "Unknown") +
-          '</p></div><button class="close-btn" onclick="clearCountrySelection()">✕</button></div><div class="metrics-grid"><div class="metric metric-blue"><div class="metric-label">Year</div><div class="metric-value">' +
+          (cd.continent || "Unknown") +
+          " • " +
+          cd.emissions_percentile.toFixed(0) +
+          'th percentile</p></div><button class="close-btn" onclick="clearCountrySelection()">✕ Close</button></div><div class="metrics"><div class="metric-card blue"><div class="metric-label">Year</div><div class="metric-value">' +
           currentYear +
-          '</div></div><div class="metric metric-red"><div class="metric-label">Per Capita</div><div class="metric-value">' +
-          countryData.emissions_per_capita.toFixed(2) +
-          ' <span class="metric-unit">tCO₂e</span></div></div><div class="metric metric-purple"><div class="metric-label">Total Emissions</div><div class="metric-value">' +
-          countryData.emissions.toFixed(2) +
-          ' <span class="metric-unit">MtCO₂e</span></div></div></div>' +
-          sectorHTML +
-          "</div>";
+          '</div></div><div class="metric-card red"><div class="metric-label">Per Capita</div><div class="metric-value">' +
+          cd.emissions_per_capita.toFixed(2) +
+          ' <span class="metric-unit">tCO₂e</span></div></div><div class="metric-card purple"><div class="metric-label">Total</div><div class="metric-value">' +
+          cd.emissions.toFixed(0) +
+          ' <span class="metric-unit">Mt</span></div></div></div>' +
+          sectorHTML;
 
-        document.getElementById("countryDetails").innerHTML = detailsHTML;
+        document.getElementById("countryDetails").innerHTML = html;
         document.getElementById("countryDetails").style.display = "block";
       }
 
