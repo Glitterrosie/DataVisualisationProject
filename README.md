@@ -7,6 +7,30 @@ You can access the hosted app here: https://datavisualisationproject.streamlit.a
 
 The app gets automatically re-deployed if changes are pushed to main.
 
+## Running the javascript code
+1. Make sure your CSV files are in a `data/` folder:
+```
+   your-folder/
+   ├── index.html
+   └── data/
+       ├── greenhouse_gas_with_population.csv
+       └── greenhouse_gas_per_sector.csv
+```
+
+2. Start a local server:
+   
+   **Python:**
+```bash
+   python -m http.server 8000
+```
+   
+   **Node.js:**
+```bash
+   npx http-server
+```
+
+3. Open `http://localhost:8000` in your browser (this also might be: http://127.0.0.1:8080/) 
+
 ## Setup
 ### Clone and Setup the Repository locally
 1. You can find the Repository holding the code [here](https://github.com/Glitterrosie/DataVisualisationProject).
@@ -33,13 +57,6 @@ We need a bunch of libraries to implement the visualisation. In order to have th
 
 For further details visit this [page](https://www.reddit.com/r/learnpython/comments/m3exau/setting_up_first_python_project_environment/)
 
-### Run Streamlit app
-To run the streamlit app you must follow these steps:
-1. Make sure your venv is activated.
-2. Run `streamlit run src/main.py`
-3. This should have opened a new page in you browser with the running application.
-
-Further documentation on streamlit can be found [here](https://docs.streamlit.io/).
 
 ### How to use Git for this project
 Git is a version control tool that enables us to work on our features seperatly and then merge them together. If you want to work on a feature you need to follow these steps:
