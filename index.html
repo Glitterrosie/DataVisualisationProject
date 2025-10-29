@@ -310,7 +310,21 @@
         dragmode:false
       };
 
-      Plotly.newPlot("worldMap",[trace],layout,{responsive:true,displayModeBar:false});
+    Plotly.newPlot("worldMap", [trace], layout, {
+        responsive: true,
+        displayModeBar: false,
+        scrollZoom: false,
+      }).then((gd) => {
+        gd.on("plotly_click", function (data) {
+          if (data.points && data.points.length > 0) {
+            const iso = data.points[0].customdata[1];
+            const cd = allData
+              .filter((row) => row.year === currentYear)
+              .find((d) => d.iso_code === iso);
+            if (cd) selectCountry(iso, cd.continent);
+          }
+        });
+      });
     }
 
     function updateWorldMap(){
