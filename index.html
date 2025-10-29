@@ -297,7 +297,7 @@
     <div class="container">
       <div class="header">
         <h1>🌍 Global Greenhouse Gas Emissions Dashboard</h1>
-        <p>Emissions across countries, regions & sectors • 1990-2023</p>
+        <p id="subtitle">Emissions across countries, regions & sectors • Loading...</p>
       </div>
 
       <div id="loading" class="card" style="text-align: center; padding: 60px">
@@ -434,6 +434,10 @@ async function init() {
     const years = [...new Set(allData.map((d) => d.year))].sort((a, b) => a - b);
     yearRange = { min: years[0], max: years[years.length - 1] };
     currentYear = yearRange.max;
+
+    // Update subtitle with dynamic year range
+    document.getElementById("subtitle").textContent = 
+      `Emissions across countries, regions & sectors • ${yearRange.min}-${yearRange.max}`;
 
     setupSlider();
     createLineChart();
