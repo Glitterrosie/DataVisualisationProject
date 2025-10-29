@@ -325,6 +325,11 @@
       const ticktext=[Math.min(...gValues).toFixed(0),sorted[Math.floor(sorted.length*0.25)].toFixed(0),sorted[Math.floor(sorted.length*0.5)].toFixed(0),sorted[Math.floor(sorted.length*0.75)].toFixed(0),Math.max(...gValues).toFixed(0)];
 
       Plotly.relayout("worldMap",{"coloraxis.colorbar.ticktext":ticktext});
+
+    let maxValue = Math.max(...gValues);
+    let maxIndex = gValues.indexOf(maxValue);
+    let maxCountry = cyd[maxIndex].Name;
+    console.log(`Highest per capita emissions in ${currentYear}: ${maxCountry} (${Math.round(maxValue).toLocaleString()} gCO₂ per capita)`);
     }
 
     function updateLineChartMarker(){
