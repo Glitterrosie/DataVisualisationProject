@@ -53,7 +53,7 @@
       .card-header {
         font-size: 1.3em;
         font-weight: 600;
-        color: #1e293b;
+        color: #ef4444;
         margin-bottom: 20px;
         padding-bottom: 10px;
         border-bottom: 2px solid #f1f5f9;
@@ -99,7 +99,7 @@
       .year-display {
         font-size: 1.8em;
         font-weight: 700;
-        color: #3b82f6;
+        color: #ef4444;
         min-width: 80px;
         text-align: center;
       }
@@ -119,18 +119,18 @@
         width: 18px;
         height: 18px;
         border-radius: 50%;
-        background: #3b82f6;
+        background: #ef4444;
         cursor: pointer;
-        box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+        box-shadow: 0 2px 6px rgba(246, 59, 59, 0.4);
       }
       #yearSlider::-moz-range-thumb {
         width: 18px;
         height: 18px;
         border-radius: 50%;
-        background: #3b82f6;
+        background: #ef4444;
         cursor: pointer;
         border: none;
-        box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+        box-shadow: 0 2px 6px rgba(246, 59, 59, 0.4);
       }
 
       .year-marks {
@@ -205,7 +205,7 @@
       }
       .metric-card.blue {
         background: #eff6ff;
-        border-left: 4px solid #3b82f6;
+        border-left: 4px solid #ef4444;
       }
       .metric-card.red {
         background: #fef2f2;
@@ -276,7 +276,7 @@
 
       .spinner {
         border: 4px solid #e2e8f0;
-        border-top: 4px solid #3b82f6;
+        border-top: 4px solid #ef4444;
         border-radius: 50%;
         width: 50px;
         height: 50px;
@@ -330,7 +330,7 @@
           </div>
 
           <div class="card">
-            <div class="card-header">Emissions Per Capita Map</div>
+            <div class="card-header">Emissions Per Capita on the world Map</div>
             <div id="worldMap"></div>
           </div>
         </div>
@@ -346,63 +346,109 @@
         selectedContinent = null,
         currentYear = 2023,
         yearRange = { min: 1990, max: 2023 };
+      //mapping countrycode to continent
+      const isoToContinent = {
+      AFG: "Asia", ALB: "Europe", DZA: "Africa", AND: "Europe", AGO: "Africa",
+      ATG: "North America", ARG: "South America", ARM: "Asia", AUS: "Oceania",
+      AUT: "Europe", AZE: "Asia", BHS: "North America", BHR: "Asia", BGD: "Asia",
+      BRB: "North America", BLR: "Europe", BEL: "Europe", BLZ: "North America",
+      BEN: "Africa", BTN: "Asia", BOL: "South America", BIH: "Europe", BWA: "Africa",
+      BRA: "South America", BRN: "Asia", BGR: "Europe", BFA: "Africa", BDI: "Africa",
+      CPV: "Africa", KHM: "Asia", CMR: "Africa", CAN: "North America", CAF: "Africa",
+      TCD: "Africa", CHL: "South America", CHN: "Asia", COL: "South America",
+      COM: "Africa", CRI: "North America", HRV: "Europe", CUB: "North America",
+      CYP: "Europe", CZE: "Europe", DNK: "Europe", DJI: "Africa", DMA: "North America",
+      DOM: "North America", ECU: "South America", EGY: "Africa", SLV: "North America",
+      GNQ: "Africa", ERI: "Africa", EST: "Europe", SWZ: "Africa", ETH: "Africa",
+      FJI: "Oceania", FIN: "Europe", FRA: "Europe", GAB: "Africa", GMB: "Africa",
+      GEO: "Asia", DEU: "Europe", GHA: "Africa", GRC: "Europe", GRD: "North America",
+      GTM: "North America", GIN: "Africa", GNB: "Africa", GUY: "South America",
+      HTI: "North America", HND: "North America", HUN: "Europe", ISL: "Europe",
+      IND: "Asia", IDN: "Asia", IRN: "Asia", IRQ: "Asia", IRL: "Europe", ISR: "Asia",
+      ITA: "Europe", CIV: "Africa", JAM: "North America", JPN: "Asia", JOR: "Asia",
+      KAZ: "Asia", KEN: "Africa", KIR: "Oceania", PRK: "Asia", KOR: "Asia",
+      KWT: "Asia", KGZ: "Asia", LAO: "Asia", LVA: "Europe", LBN: "Asia",
+      LSO: "Africa", LBR: "Africa", LBY: "Africa", LIE: "Europe", LTU: "Europe",
+      LUX: "Europe", MDG: "Africa", MWI: "Africa", MYS: "Asia", MDV: "Asia",
+      MLI: "Africa", MLT: "Europe", MHL: "Oceania", MRT: "Africa", MUS: "Africa",
+      MEX: "North America", FSM: "Oceania", MDA: "Europe", MCO: "Europe", MNG: "Asia",
+      MNE: "Europe", MAR: "Africa", MOZ: "Africa", MMR: "Asia", NAM: "Africa",
+      NRU: "Oceania", NPL: "Asia", NLD: "Europe", NZL: "Oceania", NIC: "North America",
+      NER: "Africa", NGA: "Africa", MKD: "Europe", NOR: "Europe", OMN: "Asia",
+      PAK: "Asia", PLW: "Oceania", PAN: "North America", PNG: "Oceania",
+      PRY: "South America", PER: "South America", PHL: "Asia", POL: "Europe",
+      PRT: "Europe", QAT: "Asia", ROU: "Europe", RUS: "Europe/Asia", RWA: "Africa",
+      KNA: "North America", LCA: "North America", VCT: "North America", WSM: "Oceania",
+      SMR: "Europe", STP: "Africa", SAU: "Asia", SEN: "Africa", SRB: "Europe",
+      SYC: "Africa", SLE: "Africa", SGP: "Asia", SXM: "North America", SVK: "Europe",
+      SVN: "Europe", SLB: "Oceania", SOM: "Africa", ZAF: "Africa", SSD: "Africa",
+      ESP: "Europe", LKA: "Asia", SDN: "Africa", SUR: "South America", SWE: "Europe",
+      CHE: "Europe", SYR: "Asia", TWN: "Asia", TJK: "Asia", TZA: "Africa", THA: "Asia",
+      TLS: "Asia", TGO: "Africa", TON: "Oceania", TTO: "North America", TUN: "Africa",
+      TUR: "Asia", TKM: "Asia", TUV: "Oceania", UGA: "Africa", UKR: "Europe",
+      ARE: "Asia", GBR: "Europe", USA: "North America", URY: "South America",
+      UZB: "Asia", VUT: "Oceania", VAT: "Europe", VEN: "South America", VNM: "Asia",
+      YEM: "Asia", ZMB: "Africa", ZWE: "Africa"
+  };
+async function init() {
+  try {
+    const mainResponse = await fetch("data/greenhouse_gas_with_population.csv");
+    const sectorResponse = await fetch("data/greenhouse_gas_per_sector.csv");
 
-      async function init() {
-        try {
-          const mainResponse = await fetch(
-            "data/greenhouse_gas_with_population.csv"
-          );
-          const sectorResponse = await fetch(
-            "data/greenhouse_gas_per_sector.csv"
-          );
-          allData = Papa.parse(await mainResponse.text(), {
-            header: true,
-            dynamicTyping: true,
-            skipEmptyLines: true,
-          }).data;
-          sectorData = Papa.parse(await sectorResponse.text(), {
-            header: true,
-            dynamicTyping: true,
-            skipEmptyLines: true,
-          }).data;
-          allData = allData.filter(
-            (row) =>
-              row.year &&
-              row.iso_code &&
-              row.emissions_per_capita &&
-              row.emissions
-          );
+    allData = Papa.parse(await mainResponse.text(), {
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true,
+    }).data;
 
-          allData.forEach((row) => {
-            const yearData = allData.filter((d) => d.year === row.year);
-            const values = yearData
-              .map((d) => d.emissions_per_capita)
-              .sort((a, b) => a - b);
-            row.emissions_percentile =
-              (values.filter((v) => v <= row.emissions_per_capita).length /
-                values.length) *
-              100;
-          });
+    sectorData = Papa.parse(await sectorResponse.text(), {
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true,
+    }).data;
 
-          const years = [...new Set(allData.map((d) => d.year))].sort(
-            (a, b) => a - b
-          );
-          yearRange = { min: years[0], max: years[years.length - 1] };
-          currentYear = yearRange.max;
+    // Add continent to each row using the ISO-to-continent mapping
+    allData.forEach((row) => {
+      row.continent = isoToContinent[row.iso_code] || "Unknown";
+    });
 
-          setupSlider();
-          createLineChart();
-          createWorldMap();
+    allData = allData.filter(
+      (row) =>
+        row.year &&
+        row.iso_code &&
+        row.emissions_per_capita &&
+        row.emissions
+    );
 
-          document.getElementById("loading").style.display = "none";
-          document.getElementById("mainContent").style.display = "block";
-        } catch (error) {
-          document.getElementById("loading").innerHTML =
-            '<div style="color: #dc2626; padding: 30px;"><h3>Error Loading Data</h3><p>' +
-            error.message +
-            "</p></div>";
-        }
-      }
+    allData.forEach((row) => {
+      const yearData = allData.filter((d) => d.year === row.year);
+      const values = yearData
+        .map((d) => d.emissions_per_capita)
+        .sort((a, b) => a - b);
+      row.emissions_percentile =
+        (values.filter((v) => v <= row.emissions_per_capita).length /
+          values.length) *
+        100;
+    });
+
+    const years = [...new Set(allData.map((d) => d.year))].sort((a, b) => a - b);
+    yearRange = { min: years[0], max: years[years.length - 1] };
+    currentYear = yearRange.max;
+
+    setupSlider();
+    createLineChart();
+    createWorldMap();
+
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("mainContent").style.display = "block";
+  } catch (error) {
+    document.getElementById("loading").innerHTML =
+      '<div style="color: #dc2626; padding: 30px;"><h3>Error Loading Data</h3><p>' +
+      error.message +
+      "</p></div>";
+  }
+}
+
 
       function setupSlider() {
         const slider = document.getElementById("yearSlider");
@@ -479,7 +525,7 @@
             y: gt.map((d) => d.emissions),
             type: "scatter",
             mode: "lines",
-            name: "Global",
+            name: "Global total emissions",
             line: { color: "#3b82f6", width: 3 },
             yaxis: "y",
           },
@@ -493,6 +539,20 @@
             yaxis: "y2",
           },
         ];
+        const continents = ["Europe", "Asia", "Africa", "North America", "South America", "Oceania"];
+        continents.forEach((continent) => {
+          const ct = calculateContinentTrend(continent);
+          traces.push({
+            x: ct.map((d) => d.year),
+            y: ct.map((d) => d.emissions),
+            type: "scatter",
+            mode: "lines",
+            name: continent,
+            line: { width: 2.5 },
+            customdata: continent, // for click handler
+            yaxis: "y",
+          });
+        });
 
         milestones.forEach((m) => {
           traces.push({
@@ -528,11 +588,11 @@
           yaxis: {
             title: {
               text: "Emissions (MtCO₂e)",
-              font: { size: 11, color: "#3b82f6" },
+              font: { size: 11, color: "#ef4444" },
             },
             showgrid: true,
             gridcolor: "#f1f5f9",
-            tickfont: { color: "#3b82f6", size: 9 },
+            tickfont: { color: "#ef4444", size: 9 },
           },
           yaxis2: {
             title: { text: "Temp (°C)", font: { size: 11, color: "#ef4444" } },
@@ -817,4 +877,4 @@
       init();
     </script>
   </body>
-</html>
+</html>   
