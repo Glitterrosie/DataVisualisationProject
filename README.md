@@ -2,10 +2,6 @@
 ## Project Description
 This is a project developed together in the course "Data Visualisation" at Aarhus University. The goal is to implement an interactive visualisation to show a dataset of our choosing.
 
-## Deployment
-You can access the hosted app here: https://datavisualisationproject.streamlit.app/
-
-The app gets automatically re-deployed if changes are pushed to main.
 
 ## Running the javascript code
 1. Make sure your CSV files are in a `data/` folder:

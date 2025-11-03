@@ -9,19 +9,27 @@
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background:#f8f9fa; padding:25px; color:#1e293b; }
+    body { padding: 15px; }
     .container { max-width:1800px; margin:0 auto; }
     .header { text-align:center; margin-bottom:30px; background:white; padding:25px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
     .header h1 { font-size:2.2em; color:#1e293b; margin-bottom:5px; font-weight:700; }
     .header p { color:#64748b; font-size:1em; }
 
     .card { background:white; border-radius:12px; padding:25px; box-shadow:0 2px 8px rgba(0,0,0,0.08); margin-bottom:20px; }
-    .card-header { font-size:1.3em; font-weight:600; color:#ef4444; margin-bottom:20px; padding-bottom:10px; border-bottom:2px solid #f1f5f9; }
+    .card-header { font-size:1.3em; font-weight:600; color:black; margin-bottom:20px; padding-bottom:10px; border-bottom:2px solid #f1f5f9; }
 
     .main-grid { display:grid; grid-template-columns:1fr 1.1fr; gap:20px; margin-bottom:20px; }
     .chart-section { display:flex; flex-direction:column; }
     #lineChart { width:100%; height:400px; margin-bottom:0; }
 
-    .year-control-wrapper { margin-top:25px; padding:0 70px; }
+    .legend-container {display: flex; flex-wrap: nowrap; justify-content: space-evenly; align-items: flex-start; gap: 12px; margin-top: 20px; padding: 0 40px; overflow-x: auto;}
+
+    .legend-item {flex: 1; min-width: 100px; text-align: center; border-radius: 10px; padding: 10px 6px; background: #ef4444; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100px;}
+    .legend-item .legend-name {font-size: 0.5em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;}
+
+    .legend-item .legend-value {font-size: 0.75em; font-weight: 700;}
+
+    .year-control-wrapper { margin-top:25px; padding: 0 70px; }
     .year-info { display:flex; align-items:center; justify-content:center; gap:15px; margin-bottom:12px; }
     .year-label { font-size:0.9em; font-weight:600; color:#64748b; }
     .year-display { font-size:1.8em; font-weight:700; color:#ef4444; min-width:80px; text-align:center; }
@@ -29,6 +37,12 @@
     #yearSlider::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:#ef4444; cursor:pointer; box-shadow:0 2px 6px rgba(246,59,59,0.4); }
     #yearSlider::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:#ef4444; cursor:pointer; border:none; box-shadow:0 2px 6px rgba(246,59,59,0.4); }
     .year-marks { display:flex; justify-content:space-between; font-size:0.7em; color:#94a3b8; font-weight:600; }
+
+    .chart-wrapper {
+      width: 100%;
+      padding: 0 70px;  /* or whatever horizontal padding you want */
+      box-sizing: border-box;
+    }
 
     #worldMap { width:100%; height:575px; }
 
@@ -78,15 +92,22 @@
       <div class="main-grid">
         <div class="card chart-section">
           <div class="card-header">Global Emissions Trend</div>
-          <div id="lineChart"></div>
-          <div class="year-control-wrapper">
-            <div class="year-info">
-              <span class="year-label">Selected Year:</span>
-              <div class="year-display" id="currentYear">2023</div>
+
+          <!-- new wrapper to align chart & slider -->
+          <div class="chart-wrapper">
+            <div id="lineChart"></div>
+            <div class="legend-container" id="legendContainer"></div>
+            <div class="year-control-wrapper">
+              <div class="year-info">
+                <span class="year-label">Selected Year:</span>
+                <div class="year-display" id="currentYear">2023</div>
+              </div>
+              <input type="range" id="yearSlider" min="1990" max="2023" value="2023" step="1" />
+              <div class="year-marks" id="yearMarks"></div>
             </div>
-            <input type="range" id="yearSlider" min="1990" max="2023" value="2023" step="1" />
-            <div class="year-marks" id="yearMarks"></div>
           </div>
+          <!-- end wrapper -->
+
         </div>
         <div class="card">
           <div class="card-header">Emissions Per Capita on the World Map</div>
@@ -131,16 +152,26 @@
       ZMB:"Africa",ZWE:"Africa"
     };
 
-    async function init(){
-      try{
-        const mainResponse=await fetch("data/greenhouse_gas_with_population.csv");
-        const sectorResponse=await fetch("data/greenhouse_gas_per_sector.csv");
+    const tempByYear = {};
 
-        allData=Papa.parse(await mainResponse.text(),{header:true,dynamicTyping:true,skipEmptyLines:true}).data;
-        sectorData=Papa.parse(await sectorResponse.text(),{header:true,dynamicTyping:true,skipEmptyLines:true}).data;
+    async function init(){
+      try {
+        const mainResponse = await fetch("data/greenhouse_gas_with_population.csv");
+        const sectorResponse = await fetch("data/greenhouse_gas_per_sector.csv");
+        const tempResponse = await fetch("data/global_temperature_increase.csv"); // NEW
+
+        allData = Papa.parse(await mainResponse.text(), { header:true, dynamicTyping:true, skipEmptyLines:true }).data;
+        sectorData = Papa.parse(await sectorResponse.text(), { header:true, dynamicTyping:true, skipEmptyLines:true }).data;
+        tempData = Papa.parse(await tempResponse.text(), { header:true, dynamicTyping:true, skipEmptyLines:true }).data; // NEW
 
         allData.forEach(row=>{ row.continent=isoToContinent[row.iso_code]||"Unknown"; });
         allData=allData.filter(row=>row.year&&row.iso_code&&row.emissions_per_capita&&row.emissions);
+
+        tempData.forEach(d => {
+          if(d.year != null && d.temperature_increase != null){
+            tempByYear[d.year] = d.temperature_increase;
+          }
+        });
 
         allData.forEach(row=>{
           const values=allData.filter(d=>d.year===row.year).map(d=>d.emissions_per_capita).sort((a,b)=>a-b);
@@ -186,6 +217,7 @@
         document.getElementById("currentYear").textContent=currentYear;
         updateWorldMap();
         updateLineChartMarker();
+        updateLegend();
         if(selectedCountry) updateCountryDetails();
       });
     }
@@ -193,7 +225,7 @@
     function calculateGlobalTrend(){
       const yg={};
       allData.forEach(row=>{ if(!yg[row.year]) yg[row.year]=0; yg[row.year]+=row.emissions; });
-      return Object.entries(yg).map(([year,emissions])=>({year:parseInt(year),emissions,temperature:Math.min(2.5,(emissions/35000)*1.5)})).sort((a,b)=>a.year-b.year);
+      return Object.entries(yg).map(([year,emissions])=>({year:parseInt(year),emissions,temperature:tempByYear[year] ?? null})).sort((a,b)=>a.year-b.year);
     }
 
     function calculateContinentTrend(continent){
@@ -212,9 +244,10 @@
         y:gt.map(d=>d.emissions),
         type:"scatter",
         mode:"lines",
-        name:"Global total emissions",
+        name:"Global",
         line:{color:"#3b82f6",width:3},
-        yaxis:"y"
+        yaxis:"y",
+        hoverinfo:"skip"
       },{
         x:gt.map(d=>d.year),
         y:gt.map(d=>d.temperature),
@@ -222,10 +255,12 @@
         mode:"lines",
         name:"Temp",
         line:{color:"#ef4444",width:2,dash:"dot"},
-        yaxis:"y2"
+        yaxis:"y2",
+        hoverinfo:"skip"
       }];
 
       const continents=["Europe","Asia","Africa","North America","South America","Oceania"];
+      const continentColors={"Europe":"#8b5cf6","Asia":"#f59e0b","Africa":"#10b981","North America":"#ec4899","South America":"#06b6d4","Oceania":"#6366f1"};
       continents.forEach(continent=>{
         const ct=calculateContinentTrend(continent);
         traces.push({
@@ -234,9 +269,10 @@
           type:"scatter",
           mode:"lines",
           name:continent,
-          line:{width:2.5},
+          line:{color:continentColors[continent],width:2.5},
           customdata:continent,
-          yaxis:"y"
+          yaxis:"y",
+          hoverinfo:"skip"
         });
       });
 
@@ -249,7 +285,7 @@
           name:m.label,
           line:{color:"#f59e0b",width:1,dash:"dot"},
           showlegend:false,
-          hovertemplate:"<b>"+m.label+"</b><extra></extra>"
+          hoverinfo:"skip"
         });
       });
 
@@ -260,25 +296,29 @@
         mode:"lines",
         name:"Selected",
         line:{color:"#dc2626",width:2.5,dash:"dash"},
-        showlegend:false
+        showlegend:false,
+        hoverinfo:"skip"
       });
 
       const layout={
         xaxis:{title:"",showgrid:true,gridcolor:"#f1f5f9",range:[yearRange.min-1,yearRange.max+1],tickfont:{size:10}},
-        yaxis:{title:{text:"Emissions (MtCO₂e)",font:{size:11,color:"#ef4444"}},showgrid:true,gridcolor:"#f1f5f9",tickfont:{color:"#ef4444",size:9}},
-        yaxis2:{title:{text:"Temp (°C)",font:{size:11,color:"#ef4444"}},overlaying:"y",side:"right",range:[0,2.5],tickfont:{color:"#ef4444",size:9}},
+        yaxis:{title:{text:"Emissions (MtCO₂e)",font:{size:11,color:"black"}},showgrid:true,gridcolor:"#f1f5f9",tickfont:{color:"black",size:9}},
+        yaxis2:{title:{text:"Temp (°C)",font:{size:11,color:"black"}},overlaying:"y",side:"right",range:[0,2.5],tickfont:{color:"black",size:9},tickvals:[0,0.5,1.0,1.5,2.0,2.5],ticktext:['0','0.5','1.0','<span style="color:#10b981">1.5</span>','<span style="color:#f59e0b">2.0</span>','2.5']},
         shapes:[{type:"line",x0:yearRange.min,x1:yearRange.max,y0:1.5,y1:1.5,yref:"y2",line:{color:"#10b981",width:2,dash:"dash"}},
                 {type:"line",x0:yearRange.min,x1:yearRange.max,y0:2.0,y1:2.0,yref:"y2",line:{color:"#f59e0b",width:2,dash:"dash"}}],
-        annotations:[{x:yearRange.max,y:1.5,yref:"y2",text:"1.5°C",showarrow:false,xanchor:"left",xshift:5,font:{color:"#10b981",size:10}},
-                     {x:yearRange.max,y:2.0,yref:"y2",text:"2.0°C",showarrow:false,xanchor:"left",xshift:5,font:{color:"#f59e0b",size:10}}],
         margin:{l:70,r:70,t:10,b:40},
         paper_bgcolor:"rgba(0,0,0,0)",
         plot_bgcolor:"#fafafa",
-        legend:{x:0.02,y:0.98,bgcolor:"rgba(255,255,255,0.9)",font:{size:10},bordercolor:"#e2e8f0",borderwidth:1},
-        hovermode:"x unified"
+        legend:{orientation:"h",x:0.5,xanchor:"center",y:-0.15,bgcolor:"rgba(255,255,255,0.9)",font:{size:10},bordercolor:"#e2e8f0",borderwidth:1},
+        showlegend: false,
+        hovermode:false
       };
 
-      Plotly.newPlot("lineChart",traces,layout,{responsive:true,displayModeBar:false});
+      Plotly.newPlot("lineChart",traces,layout,{responsive:true,displayModeBar:false})
+        .then(() => {
+        Plotly.Plots.resize(document.getElementById("lineChart"));
+      });
+      updateLegend();
     }
 
     function createWorldMap(){
@@ -359,12 +399,38 @@
       if(cti!==-1) Plotly.deleteTraces("lineChart",cti);
       if(selectedContinent){
         const ct=calculateContinentTrend(selectedContinent);
-        Plotly.addTraces("lineChart",{x:ct.map(d=>d.year),y:ct.map(d=>d.emissions),type:"scatter",mode:"lines",name:selectedContinent,line:{color:"#a855f7",width:2.5},yaxis:"y"});
+        Plotly.addTraces("lineChart",{x:ct.map(d=>d.year),y:ct.map(d=>d.emissions),type:"scatter",mode:"lines",name:selectedContinent,line:{color:"#a855f7",width:2.5},yaxis:"y",hoverinfo:"skip"});
       }
+      updateLegend();
     }
 
     function selectCountry(iso,continent){ selectedCountry=iso; selectedContinent=continent; updateContinentLine(); updateCountryDetails(); }
     function clearCountrySelection(){ selectedCountry=null; selectedContinent=null; updateContinentLine(); document.getElementById("countryDetails").style.display="none"; }
+
+    function updateLegend(){
+      const legendContainer=document.getElementById("legendContainer");
+      const gt=calculateGlobalTrend();
+      const globalData=gt.find(d=>d.year===currentYear);
+      const continentColors={"Europe":"#8b5cf6","Asia":"#f59e0b","Africa":"#10b981","North America":"#ec4899","South America":"#06b6d4","Oceania":"#6366f1"};
+      
+      let html='<div class="legend-item" style="background:#3b82f6"><span>Global:</span><span class="legend-value">'+(globalData?globalData.emissions.toLocaleString():'N/A')+' Mt</span></div>';
+      html+='<div class="legend-item" style="background:#ef4444"><span>Temp:</span><span class="legend-value">'+(globalData?globalData.temperature.toFixed(2):'N/A')+'°C</span></div>';
+      
+      const continents=["Europe","Asia","Africa","North America","South America","Oceania"];
+      continents.forEach(continent=>{
+        const ct=calculateContinentTrend(continent);
+        const cd=ct.find(d=>d.year===currentYear);
+        html+='<div class="legend-item" style="background:'+continentColors[continent]+'"><span>'+continent+':</span><span class="legend-value">'+(cd?cd.emissions.toLocaleString():'N/A')+' Mt</span></div>';
+      });
+      
+      if(selectedContinent){
+        const ct=calculateContinentTrend(selectedContinent);
+        const cd=ct.find(d=>d.year===currentYear);
+        html+='<div class="legend-item" style="background:#a855f7"><span>'+selectedContinent+' (Selected):</span><span class="legend-value">'+(cd?cd.emissions.toLocaleString():'N/A')+' Mt</span></div>';
+      }
+      
+      legendContainer.innerHTML=html;
+    }
 
     function updateCountryDetails(){
       const cd=allData.find(d=>d.iso_code===selectedCountry&&d.year===currentYear);
