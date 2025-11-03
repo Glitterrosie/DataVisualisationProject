@@ -29,14 +29,22 @@
 
     .legend-item .legend-value {font-size: 0.75em; font-weight: 700;}
 
-    .year-control-wrapper { margin-top:25px; padding: 0 70px; }
+    .year-control-wrapper { margin-top:25px; padding:0 70px; }
     .year-info { display:flex; align-items:center; justify-content:center; gap:15px; margin-bottom:12px; }
     .year-label { font-size:0.9em; font-weight:600; color:#64748b; }
     .year-display { font-size:1.8em; font-weight:700; color:#ef4444; min-width:80px; text-align:center; }
     #yearSlider { width:100%; height:6px; border-radius:3px; outline:none; -webkit-appearance:none; cursor:pointer; background:#e2e8f0; margin-bottom:8px; }
     #yearSlider::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:#ef4444; cursor:pointer; box-shadow:0 2px 6px rgba(246,59,59,0.4); }
     #yearSlider::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:#ef4444; cursor:pointer; border:none; box-shadow:0 2px 6px rgba(246,59,59,0.4); }
+    /* nicely spaced year marks under the slider */
     .year-marks { display:flex; justify-content:space-between; font-size:0.7em; color:#94a3b8; font-weight:600; }
+
+    /* Derivative (lasagna) bar above the line chart */
+    .derivative-bar-wrapper { padding: 0 70px; box-sizing: border-box; margin-bottom:8px; }
+    .derivative-bar { height:20px; border-radius:6px; overflow:hidden; background:#fff; display:flex; position:relative; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+    .deriv-segment { height:100%; flex-shrink:0; transition:background-color 0.2s ease; }
+    .deriv-marker { position:absolute; top:-6px; bottom:-6px; width:3px; background:#dc2626; box-shadow:0 0 6px rgba(220,66,66,0.5); pointer-events:none; transform:translateX(-50%); border-radius:2px; }
+    .derivative-legend { font-size:0.85em; color:#475569; text-align:center; margin-bottom:6px; }
 
     .chart-wrapper {
       width: 100%;
@@ -95,7 +103,11 @@
 
           <!-- new wrapper to align chart & slider -->
           <div class="chart-wrapper">
-            <div id="lineChart"></div>
+            <div class="derivative-bar-wrapper" aria-hidden="true">
+              <div id="derivativeBar" class="derivative-bar"></div>
+              <div id="derivativeLegend" class="derivative-legend"><span style="color:#ef4444">■ increase</span> &nbsp; <span style="color:#3b82f6">■ decrease</span></div>
+            </div>
+             <div id="lineChart"></div>
             <div class="legend-container" id="legendContainer"></div>
             <div class="year-control-wrapper">
               <div class="year-info">
@@ -218,6 +230,7 @@
         updateWorldMap();
         updateLineChartMarker();
         updateLegend();
+        updateDerivativeBar(); // move marker when year changes
         if(selectedCountry) updateCountryDetails();
       });
     }
@@ -226,6 +239,26 @@
       const yg={};
       allData.forEach(row=>{ if(!yg[row.year]) yg[row.year]=0; yg[row.year]+=row.emissions; });
       return Object.entries(yg).map(([year,emissions])=>({year:parseInt(year),emissions,temperature:tempByYear[year] ?? null})).sort((a,b)=>a.year-b.year);
+    }
+
+    // helper: hex <-> rgb and linear color interpolation for a smooth diverging scale
+    function hexToRgb(hex){
+      const h = hex.replace("#","").trim();
+      return { r: parseInt(h.substring(0,2),16), g: parseInt(h.substring(2,4),16), b: parseInt(h.substring(4,6),16) };
+    }
+    function rgbToHex({r,g,b}){ return "#" + [r,g,b].map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0")).join(""); }
+    function lerp(a,b,t){ return a + (b-a)*t; }
+    function lerpColor(hexA, hexB, t){
+      const A = hexToRgb(hexA), B = hexToRgb(hexB);
+      return rgbToHex({ r: lerp(A.r,B.r,t), g: lerp(A.g,B.g,t), b: lerp(A.b,B.b,t) });
+    }
+    // diverging color: negative -> blue..white, positive -> white..red, small/zero -> pale neutral
+    function colorForValue(v, maxAbs){
+      if(maxAbs <= 0) return "#e6eef9";
+      const t = Math.min(1, Math.abs(v) / maxAbs);
+      const blue = "#3b82f6", white = "#ffffff", red = "#ef4444";
+      if(v === 0) return "#f8fafc";
+      return v > 0 ? lerpColor(white, red, t) : lerpColor(blue, white, t);
     }
 
     function calculateContinentTrend(continent){
@@ -319,6 +352,50 @@
         Plotly.Plots.resize(document.getElementById("lineChart"));
       });
       updateLegend();
+      createDerivativeBar(); // build derivative (lasagna) bar after plotting
+    }
+
+    // build the 'lasagna' derivative bar with a smooth diverging color scale and place a year marker
+    function createDerivativeBar(){
+      const container = document.getElementById("derivativeBar");
+      container.innerHTML = "";
+      const gt = calculateGlobalTrend(); // sorted by year
+      if(!gt.length) return;
+      const n = gt.length;
+      const diffs = new Array(n).fill(0);
+      for(let i=1;i<n;i++) diffs[i] = gt[i].emissions - gt[i-1].emissions;
+      const maxAbs = Math.max(...diffs.map(Math.abs), 0.000001);
+
+      for(let i=0;i<n;i++){
+        const seg = document.createElement("div");
+        seg.className = "deriv-segment";
+        seg.style.flexBasis = (100/n) + "%";
+        const v = diffs[i];
+        // compute smooth diverging color
+        const col = (i===0) ? "#f8fafc" : colorForValue(v, maxAbs);
+        seg.style.background = col;
+        seg.title = gt[i].year + " — " + (i===0 ? "n/a" : (v>0?"+":"") + v.toFixed(1) + " Mt");
+        container.appendChild(seg);
+      }
+
+      let marker = document.getElementById("derivMarker");
+      if(!marker){
+        marker = document.createElement("div");
+        marker.id = "derivMarker";
+        marker.className = "deriv-marker";
+        container.appendChild(marker);
+      }
+      updateDerivativeBar(); // position marker for currentYear
+    }
+
+    function updateDerivativeBar(){
+      const marker = document.getElementById("derivMarker");
+      const gt = calculateGlobalTrend();
+      if(!marker || !gt.length) return;
+      const min = gt[0].year, max = gt[gt.length-1].year;
+      const denom = (max - min) || 1;
+      const pct = ((currentYear - min) / denom) * 100;
+      marker.style.left = pct + "%";
     }
 
     function createWorldMap(){
