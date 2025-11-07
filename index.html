@@ -180,11 +180,11 @@
       try {
         const mainResponse = await fetch("data/greenhouse_gas_with_population.csv");
         const sectorResponse = await fetch("data/greenhouse_gas_per_sector.csv");
-        const tempResponse = await fetch("data/global_temperature_increase.csv"); // NEW
+        const tempResponse = await fetch("data/global_temperature_increase.csv");
 
         allData = Papa.parse(await mainResponse.text(), { header:true, dynamicTyping:true, skipEmptyLines:true }).data;
         sectorData = Papa.parse(await sectorResponse.text(), { header:true, dynamicTyping:true, skipEmptyLines:true }).data;
-        tempData = Papa.parse(await tempResponse.text(), { header:true, dynamicTyping:true, skipEmptyLines:true }).data; // NEW
+        tempData = Papa.parse(await tempResponse.text(), { header:true, dynamicTyping:true, skipEmptyLines:true }).data;
 
         allData.forEach(row=>{ row.continent=isoToContinent[row.iso_code]||"Unknown"; });
         allData=allData.filter(row=>row.year&&row.iso_code&&row.emissions_per_capita&&row.emissions);
@@ -247,9 +247,8 @@
         updateWorldMap();
         updateLineChartMarker();
         updateLegend();
-        updateDerivativeBar(); // move marker when year changes
+        updateDerivativeBar();
         if(selectedCountry) updateCountryDetails();
-        // update sector chart year marker if visible without rebuilding
         updateSectorChartMarker();
         updateComparisonChartMarker();
         updateSectorStackMarker();
@@ -313,8 +312,6 @@
         hoverinfo:"skip"
       }];
 
-      // continents removed from the top line chart
-
       milestones.forEach(m=>{
         traces.push({
           x:[m.year,m.year],
@@ -358,14 +355,13 @@
         Plotly.Plots.resize(document.getElementById("lineChart"));
       });
       updateLegend();
-      createDerivativeBar(); // build derivative (lasagna) bar after plotting
+      createDerivativeBar();
     }
 
-    // build the 'lasagna' derivative bar with a smooth diverging color scale and place a year marker
     function createDerivativeBar(){
       const container = document.getElementById("derivativeBar");
       container.innerHTML = "";
-      const gt = calculateGlobalTrend(); // sorted by year
+      const gt = calculateGlobalTrend();
       if(!gt.length) return;
       const n = gt.length;
       const diffs = new Array(n).fill(0);
@@ -377,7 +373,6 @@
         seg.className = "deriv-segment";
         seg.style.flexBasis = (100/n) + "%";
         const v = diffs[i];
-        // compute smooth diverging color
         const col = (i===0) ? "#f8fafc" : colorForValue(v, maxAbs);
         seg.style.background = col;
         seg.title = gt[i].year + " — " + (i===0 ? "n/a" : (v>0?"+":"") + v.toFixed(1) + " Mt");
@@ -391,7 +386,7 @@
         marker.className = "deriv-marker";
         container.appendChild(marker);
       }
-      updateDerivativeBar(); // position marker for currentYear
+      updateDerivativeBar();
     }
 
     function updateDerivativeBar(){
@@ -407,16 +402,35 @@
     function createWorldMap(){
       const cyd=allData.filter(d=>d.year===currentYear);
       const gValues=cyd.map(d=>d.emissions_per_capita*1_000_000);
+      
+      // Sort values to create quantile bins
       const sorted=[...gValues].sort((a,b)=>a-b);
-      const equalized=gValues.map(v=>sorted.findIndex(x=>x>=v)/(sorted.length-1));
+      const n=sorted.length;
+      
+      // Define quantile breakpoints for better color distribution
+      // Using more granular bins: 0-20%, 20-40%, 40-60%, 60-80%, 80-90%, 90-95%, 95-98%, 98-100%
+      const quantiles=[0, 0.20, 0.40, 0.60, 0.80, 0.90, 0.95, 0.98, 1.0];
+      const bins=quantiles.map(q=>sorted[Math.floor((n-1)*q)]);
+      
+      // Assign each country to a quantile (0 to 1 scale)
+      const quantileColors=gValues.map(v=>{
+        for(let i=bins.length-1;i>=0;i--){
+          if(v>=bins[i]) return i/(bins.length-1);
+        }
+        return 0;
+      });
 
       const trace={
         type:"choropleth",
         locations:cyd.map(d=>d.iso_code),
-        z:equalized,
+        z:quantileColors,
         text:cyd.map(d=>d.Name),
-        customdata:cyd.map(d=>[Math.round(d.emissions_per_capita*1_000_000).toLocaleString(),d.iso_code]),
-        hovertemplate:"<b>%{text}</b><br><b>%{customdata[0]}</b> gCO₂ per capita<extra></extra>",
+        customdata:cyd.map((d,i)=>{
+          const val=Math.round(d.emissions_per_capita*1_000_000);
+          const percentile=((sorted.findIndex(x=>x>=gValues[i])+1)/n*100).toFixed(0);
+          return [val.toLocaleString(),d.iso_code,percentile];
+        }),
+        hovertemplate:"<b>%{text}</b><br><b>%{customdata[0]}</b> gCO₂ per capita<br>%{customdata[2]}th percentile<extra></extra>",
         colorscale:[[0,"#fef2f2"],[0.15,"#fee2e2"],[0.3,"#fecaca"],[0.5,"#fca5a5"],[0.7,"#f87171"],[0.85,"#ef4444"],[1,"#dc2626"]],
         zmin:0,
         zmax:1,
@@ -426,7 +440,13 @@
 
       const layout={
         geo:{projection:{type:"natural earth"},showcoastlines:false,showland:true,landcolor:"#f8fafc",showocean:true,oceancolor:"#dbeafe",showcountries:true,countrycolor:"rgba(255,255,255,0.4)",bgcolor:"rgba(0,0,0,0)",showframe:false},
-        coloraxis:{colorscale:trace.colorscale,cmin:0,cmax:1,colorbar:{title:{text:"CO₂ per capita (gCO₂)",font:{size:10}},thickness:15,len:0.7,tickvals:[0,0.25,0.5,0.75,1],ticktext:[Math.min(...gValues).toFixed(0),sorted[Math.floor(sorted.length*0.25)].toFixed(0),sorted[Math.floor(sorted.length*0.5)].toFixed(0),sorted[Math.floor(sorted.length*0.75)].toFixed(0),Math.max(...gValues).toFixed(0)],tickfont:{size:9}}},
+        coloraxis:{colorscale:trace.colorscale,cmin:0,cmax:1,colorbar:{title:{text:"CO₂ per capita (gCO₂)<br><i style='font-size:8px'>quantile-based</i>",font:{size:10}},thickness:15,len:0.7,tickvals:[0,0.25,0.5,0.75,1],ticktext:[
+          bins[0].toFixed(0)+" (0%)",
+          bins[2].toFixed(0)+" (40%)",
+          bins[4].toFixed(0)+" (80%)",
+          bins[6].toFixed(0)+" (95%)",
+          bins[8].toFixed(0)+" (100%)"
+        ],tickfont:{size:9}}},
         margin:{l:0,r:0,t:0,b:0},
         paper_bgcolor:"rgba(0,0,0,0)",
         height:575,
@@ -453,20 +473,52 @@
     function updateWorldMap(){
       const cyd=allData.filter(d=>d.year===currentYear);
       const gValues=cyd.map(d=>d.emissions_per_capita*1_000_000);
+      
+      // Sort values to create quantile bins
       const sorted=[...gValues].sort((a,b)=>a-b);
-      const equalized=gValues.map(v=>sorted.findIndex(x=>x>=v)/(sorted.length-1));
-      const hoverValues=cyd.map(v=>Math.round(v.emissions_per_capita*1_000_000).toLocaleString());
+      const n=sorted.length;
+      
+      // Define quantile breakpoints
+      const quantiles=[0, 0.20, 0.40, 0.60, 0.80, 0.90, 0.95, 0.98, 1.0];
+      const bins=quantiles.map(q=>sorted[Math.floor((n-1)*q)]);
+      
+      // Assign each country to a quantile
+      const quantileColors=gValues.map(v=>{
+        for(let i=bins.length-1;i>=0;i--){
+          if(v>=bins[i]) return i/(bins.length-1);
+        }
+        return 0;
+      });
+      
+      const hoverValues=cyd.map((d,i)=>{
+        const val=Math.round(d.emissions_per_capita*1_000_000);
+        const percentile=((sorted.findIndex(x=>x>=gValues[i])+1)/n*100).toFixed(0);
+        return [val.toLocaleString(),d.iso_code,percentile];
+      });
 
-      Plotly.restyle("worldMap",{z:[equalized],locations:[cyd.map(d=>d.iso_code)],text:[cyd.map(d=>d.Name)],customdata:[cyd.map((d,i)=>[hoverValues[i],d.iso_code])]},[0]);
+      Plotly.restyle("worldMap",{
+        z:[quantileColors],
+        locations:[cyd.map(d=>d.iso_code)],
+        text:[cyd.map(d=>d.Name)],
+        customdata:[hoverValues]
+      },[0]);
 
-      const ticktext=[Math.min(...gValues).toFixed(0),sorted[Math.floor(sorted.length*0.25)].toFixed(0),sorted[Math.floor(sorted.length*0.5)].toFixed(0),sorted[Math.floor(sorted.length*0.75)].toFixed(0),Math.max(...gValues).toFixed(0)];
+      // Update colorbar tick labels
+      const ticktext=[
+        bins[0].toFixed(0)+" (0%)",
+        bins[2].toFixed(0)+" (40%)",
+        bins[4].toFixed(0)+" (80%)",
+        bins[6].toFixed(0)+" (95%)",
+        bins[8].toFixed(0)+" (100%)"
+      ];
 
       Plotly.relayout("worldMap",{"coloraxis.colorbar.ticktext":ticktext});
 
-    let maxValue = Math.max(...gValues);
-    let maxIndex = gValues.indexOf(maxValue);
-    let maxCountry = cyd[maxIndex].Name;
-    console.log(`Highest per capita emissions in ${currentYear}: ${maxCountry} (${Math.round(maxValue).toLocaleString()} gCO₂ per capita)`);
+      let maxValue = Math.max(...gValues);
+      let maxIndex = gValues.indexOf(maxValue);
+      let maxCountry = cyd[maxIndex].Name;
+      console.log(`Highest per capita emissions in ${currentYear}: ${maxCountry} (${Math.round(maxValue).toLocaleString()} gCO₂ per capita)`);
+      console.log(`Color distribution: 0-20% (lightest) to 98-100% (darkest)`);
     }
 
     function updateLineChartMarker(){
@@ -539,7 +591,7 @@
       sectorData.filter(row=>row.iso_code===selectedCountry&&row.year===currentYear).forEach(row=>{ if(!cs[row.sector]) cs[row.sector]=0; cs[row.sector]+=row.emissions; });
       const sectors=Object.entries(cs).map(([sector,emissions])=>({sector,emissions})).sort((a,b)=>b.emissions-a.emissions);
 
-      let sectorHTML=""; // removed previous sector breakdown chart
+      let sectorHTML="";
 
       document.getElementById("countryDetails").style.display="block";
       document.getElementById("countryDetails").innerHTML=`
@@ -572,7 +624,6 @@
           <div id="sectorStackChart" style="width:100%; height:420px;"></div>
         </div>`;
 
-      // Populate sector selector and render chart
       const availableSectors=[...new Set(sectorData.map(r=>r.sector))].sort();
       const sel=document.getElementById("sectorSelect");
       sel.innerHTML=availableSectors.map(s=>`<option value="${s}">${s}</option>`).join("");
@@ -584,11 +635,9 @@
       renderSectorStackChart(selectedCountry, defaultSector);
       sel.addEventListener("change", (e)=>{ renderSectorCandlestick(selectedCountry, e.target.value); });
       sel.addEventListener("change", (e)=>{ renderSectorStackChart(selectedCountry, e.target.value); });
-      // render stacked chart after selectors are ready
       renderSectorStackChart(selectedCountry);
     }
 
-    // ------- Sector candlestick helpers -------
     function percentile(sortedArray, p){
       if(!sortedArray.length) return null;
       const idx=(p/100)*(sortedArray.length-1);
@@ -606,7 +655,6 @@
         const pop = populationByKey[key];
         if(!pop) return;
         if(!yearToVals[r.year]) yearToVals[r.year]=[];
-        // per-capita sector value: sector_emissions / population
         yearToVals[r.year].push(Number(r.emissions)/pop);
       });
       const years=Object.keys(yearToVals).map(y=>parseInt(y,10)).sort((a,b)=>a-b);
@@ -616,7 +664,6 @@
         const m=vals.reduce((a,b)=>a+b,0)/vals.length;
         return Math.max(m, eps);
       });
-      // ensure >0 for log scale
       const valuesByYear={};
       years.forEach(y=>{ valuesByYear[y]=yearToVals[y].map(v=>Math.max(v, eps)); });
       return { years, valuesByYear, means };
@@ -658,7 +705,6 @@
         });
       });
       if(!Number.isFinite(globalMin) || globalMin <= 0) globalMin = 1e-6;
-      // removed global mean line as requested
       traces.push({
         type:"scatter",
         mode:"lines+markers",
@@ -698,7 +744,6 @@
     function updateSectorChartMarker(){
       const el = document.getElementById("sectorChart");
       if(!el || !el.data || el.data.length < 3) return;
-      // compute min>0 and max from all box traces (for log scale)
       let maxY = 0;
       let minY = Infinity;
       el.data.forEach(tr => {
@@ -710,11 +755,10 @@
         }
       });
       if(!Number.isFinite(minY) || minY <= 0) minY = 1e-6;
-      const ti = el.data.length - 1; // marker is last trace
+      const ti = el.data.length - 1;
       Plotly.update("sectorChart", { x: [[String(currentYear), String(currentYear)]], y: [[minY*0.9, maxY*0.95]] }, {}, [ti]);
     }
 
-    // ------- Continent & BRICS comparison chart -------
     const G7 = new Set(["CAN","FRA","DEU","ITA","JPN","GBR","USA"]);
 
     function collectYearsGlobal(){
@@ -763,7 +807,6 @@
         (r)=> G7.has(r.iso_code)
       );
 
-      // Build area band using min then max with fill to next
       const traces = [];
 
       traces.push({ type:"scatter", mode:"lines", name:"Continent min", x:xCats, y:continentBand.minVals, line:{width:0}, hoverinfo:"skip", showlegend:false });
@@ -774,7 +817,6 @@
 
       traces.push({ type:"scatter", mode:"lines+markers", name:"Selected country", x:xCats, y:countrySeries.y, connectgaps:true, line:{color:"#dc2626", width:2.5}, marker:{size:4, color:"#dc2626"}, hovertemplate:"%{x}: %{y:.4f} tCO₂e per capita<extra></extra>" });
 
-      // Vertical marker
       let minY=Infinity, maxY=0;
       [continentBand.minVals, continentBand.maxVals, g7Band.minVals, g7Band.maxVals, countrySeries.y].forEach(arr=>{
         arr.forEach(v=>{ if(Number.isFinite(v)){ minY=Math.min(minY,v); maxY=Math.max(maxY,v); } });
@@ -804,11 +846,10 @@
         }
       });
       if(!Number.isFinite(minY) || minY<=0) minY = 1e-6;
-      const ti = el.data.length - 1; // marker last
+      const ti = el.data.length - 1;
       Plotly.update("comparisonChart", { x: [[String(currentYear), String(currentYear)]], y: [[minY*0.9, maxY*0.95]] }, {}, [ti]);
     }
 
-    // ------- Stacked sector chart for selected country -------
     function buildCountrySectorTimeSeries(iso){
       const rows = sectorData.filter(r=>r.iso_code===iso && r.year!=null && r.emissions!=null);
       const yearsSet = new Set(rows.map(r=>r.year));
@@ -828,13 +869,12 @@
       const ts = buildCountrySectorTimeSeries(iso);
       const xCats = ts.years.map(y=>String(y));
       const palette = ["#60a5fa","#34d399","#fbbf24","#f87171","#a78bfa","#22d3ee","#fb7185","#f59e0b","#4ade80","#93c5fd","#c084fc","#38bdf8"]; 
-      // Build traces with non-highlighted first, highlighted last for visual prominence
       const traces=[];
       ts.sectorNames.forEach((s,idx)=>{
         const isHi = highlightedSector && s===highlightedSector;
         const base = palette[idx % palette.length];
         const lineW = isHi ? 2.5 : 1;
-        const alpha = isHi ? "90" : "40"; // stronger fill for highlighted
+        const alpha = isHi ? "90" : "40";
         traces.push({
           type:"scatter",
           mode:"lines",
@@ -850,7 +890,6 @@
       let maxY = Math.max(...ts.totals, 0);
       traces.push({ type:"scatter", mode:"lines", x:[String(currentYear), String(currentYear)], y:[0, maxY*0.95], line:{color:"#dc2626", width:2, dash:"dash"}, name:"Selected Year", hoverinfo:"skip", showlegend:false });
 
-      // Build direct labels on the right using annotations at mid-band positions
       const lastIdx = ts.years.length ? ts.years.length - 1 : -1;
       const annotations = [];
       if(lastIdx >= 0){
