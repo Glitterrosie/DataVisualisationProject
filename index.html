@@ -141,7 +141,13 @@
 
   <script>
     let allData=[], sectorData=[], selectedCountry=null, selectedContinent=null, currentYear=2023, yearRange={min:1990,max:2023};
-
+  const COLORS = {
+    purple: "#601A4A",
+    red: "#EE442F",
+    teal: "#63ACBE",
+    green: "#BBD686",
+    gray: "#888888"
+  };
     const isoToContinent={
       AFG:"Asia",ALB:"Europe",DZA:"Africa",AND:"Europe",AGO:"Africa",ATG:"North America",
       ARG:"South America",ARM:"Asia",AUS:"Oceania",AUT:"Europe",AZE:"Asia",BHS:"North America",
@@ -573,7 +579,7 @@
         </div>`;
 
       // Populate sector selector and render chart
-      const availableSectors=[...new Set(sectorData.map(r=>r.sector))].sort();
+      const availableSectors = [...new Set(sectorData.map(r => r.sector).filter(s => s != null && s !== ""))].sort();
       const sel=document.getElementById("sectorSelect");
       sel.innerHTML=availableSectors.map(s=>`<option value="${s}">${s}</option>`).join("");
       const countrySectors=[...new Set(sectorData.filter(r=>r.iso_code===selectedCountry).map(r=>r.sector))];
@@ -630,70 +636,99 @@
       return {x,y};
     }
 
-    function renderSectorCandlestick(iso, sector){
-      const dist=calculateGlobalSectorValues(sector);
-      const countrySeries=calculateCountrySectorSeries(iso, sector, dist.years);
-      const traces=[];
-      let globalMax=0;
-      let globalMin=Infinity;
-      const yearCats = dist.years.map(y=>String(y));
-      dist.years.forEach(y=>{
-        const vals=dist.valuesByYear[y]||[];
-        if(vals.length){
-          globalMax=Math.max(globalMax, Math.max(...vals));
-          globalMin=Math.min(globalMin, Math.min(...vals));
-        }
+    // Set global min/max for all sectors (adjust as needed)
+const GLOBAL_Y_MIN = 1e-6;  // minimum positive value
+const GLOBAL_Y_MAX = 50;    // maximum expected tCO₂e per capita
+
+function renderSectorCandlestick(iso, sector) {
+    const dist = calculateGlobalSectorValues(sector);
+    const countrySeries = calculateCountrySectorSeries(iso, sector, dist.years);
+    const traces = [];
+
+    const yearCats = dist.years.map(y => String(y));
+
+    // Box plots
+    dist.years.forEach(y => {
+        const vals = dist.valuesByYear[y] || [];
+        // Replace null/undefined or non-positive with GLOBAL_Y_MIN
+        const filteredVals = vals.map(v => (v == null || v <= 0 ? GLOBAL_Y_MIN : v));
         traces.push({
-          type:"box",
-          x:new Array(vals.length).fill(String(y)),
-          y:vals,
-          name:String(y),
-          boxmean:true,
-          marker:{color:"#94a3b8"},
-          line:{color:"#94a3b8", width:1.2},
-          fillcolor:"rgba(148,163,184,0.28)",
-          whiskerwidth:0.4,
-          hoverinfo:"all",
-          showlegend:false
+            type: "box",
+            x: new Array(filteredVals.length).fill(String(y)),
+            y: filteredVals,
+            name: String(y),
+            boxmean: true,
+            marker: { color: "#94a3b8" },
+            line: { color: "#94a3b8", width: 1.2 },
+            fillcolor: "rgba(148,163,184,0.28)",
+            whiskerwidth: 0.4,
+            hoverinfo: "all",
+            showlegend: false
         });
-      });
-      if(!Number.isFinite(globalMin) || globalMin <= 0) globalMin = 1e-6;
-      // removed global mean line as requested
-      traces.push({
-        type:"scatter",
-        mode:"lines+markers",
-        x:yearCats,
-        y:countrySeries.y,
-        connectgaps:true,
-        line:{color:"#dc2626", width:3},
-        marker:{size:4, color:"#dc2626"},
-        name:"Selected country",
-        hovertemplate:"%{x}: %{y:.4f} tCO₂e per capita<extra></extra>"
-      });
-      traces.push({
-        type:"scatter",
-        mode:"lines",
-        x:[String(currentYear), String(currentYear)],
-        y:[globalMin*0.9, globalMax*0.95],
-        line:{color:"#dc2626", width:2, dash:"dash"},
-        name:"Selected Year",
-        hoverinfo:"skip",
-        showlegend:false
-      });
-      const layout={
-        margin:{l:60,r:20,t:10,b:40},
-        paper_bgcolor:"rgba(0,0,0,0)",
-        plot_bgcolor:"#fafafa",
-        xaxis:{title:"Year", showgrid:true, gridcolor:"#f1f5f9", type:"category", categoryorder:"category ascending"},
-        yaxis:{title:"Sector emissions per capita (tCO₂e per capita)", showgrid:true, gridcolor:"#eef2f7", type:"log"},
-        boxmode:"overlay",
-        boxgap:0.35,
-        boxgroupgap:0.2,
-        showlegend:true,
-        legend:{orientation:"h", x:0.5, xanchor:"center", y:-0.2, font:{size:10}}
-      };
-      Plotly.newPlot("sectorChart", traces, layout, {responsive:true, displayModeBar:false});
-    }
+    });
+
+    // Country line (slightly above GLOBAL_Y_MIN to avoid disappearing on log scale)
+    const SAFE_Y_MIN = GLOBAL_Y_MIN * 1.05; // small offset
+    const countryY = (countrySeries.y || []).map(v => (v == null || v <= 0 ? SAFE_Y_MIN : v));
+    traces.push({
+        type: "scatter",
+        mode: "lines+markers",
+        x: yearCats,
+        y: countryY,
+        connectgaps: true,
+        line: { color: "#dc2626", width: 3 },
+        marker: { size: 4, color: "#dc2626" },
+        name: "Selected country",
+        hovertemplate: "%{x}: %{y:.4f} tCO₂e per capita<extra></extra>"
+    });
+
+    // Vertical dashed line for current year (clamped to log scale)
+    traces.push({
+        type: "scatter",
+        mode: "lines",
+        x: [String(currentYear), String(currentYear)],
+        y: [SAFE_Y_MIN, GLOBAL_Y_MAX * 1.05],
+        line: { color: "#dc2626", width: 2, dash: "dash" },
+        name: "Selected Year",
+        hoverinfo: "skip",
+        showlegend: false
+    });
+
+    const layout = {
+        margin: { l: 60, r: 20, t: 10, b: 40 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "#fafafa",
+        xaxis: {
+            title: "Year",
+            showgrid: true,
+            gridcolor: "#f1f5f9",
+            type: "category",
+            categoryorder: "category ascending"
+        },
+        yaxis: {
+            title: "Sector emissions per capita (tCO₂e per capita)",
+            showgrid: true,
+            gridcolor: "#eef2f7",
+            type: "log",
+            autorange: false,
+            range: [Math.log10(GLOBAL_Y_MIN), Math.log10(GLOBAL_Y_MAX)]
+        },
+        boxmode: "overlay",
+        boxgap: 0.35,
+        boxgroupgap: 0.2,
+        showlegend: true,
+        legend: {
+            orientation: "h",
+            x: 0.5,
+            xanchor: "center",
+            y: -0.2,
+            font: { size: 10 }
+        }
+    };
+
+    Plotly.newPlot("sectorChart", traces, layout, { responsive: true, displayModeBar: false });
+}
+
 
     function updateSectorChartMarker(){
       const el = document.getElementById("sectorChart");
