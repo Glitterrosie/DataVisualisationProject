@@ -67,7 +67,7 @@
     .metric-card { padding:20px; border-radius:10px; text-align:center; }
     .metric-card.blue { background:#eff6ff; border-left:4px solid #ef4444; }
     .metric-card.red { background:#fef2f2; border-left:4px solid #ef4444; }
-    .metric-card.purple { background:#faf5ff; border-left:4px solid #a855f7; }
+    .metric-card.purple { background:#faf5ff; border-left:4px solid #BBD686; }
     .metric-label { font-size:0.8em; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; }
     .metric-value { font-size:1.8em; font-weight:700; color:#1e293b; }
     .metric-unit { font-size:0.5em; color:#64748b; font-weight:600; }
@@ -299,7 +299,7 @@
         type:"scatter",
         mode:"lines",
         name:"Global",
-        line:{color:"#EE42F",width:3},
+        line:{color:"#63ACBE",width:3},
         yaxis:"y",
         hoverinfo:"x+y"
       },{
@@ -533,34 +533,43 @@
 
     function updateContinentLine(){
       const et=document.getElementById("lineChart").data;
-      const cti=et.findIndex(t=>t.line&&t.line.color==="#a855f7");
+      const cti=et.findIndex(t=>t.line&&t.line.color==="#601A4A");
       if(cti!==-1) Plotly.deleteTraces("lineChart",cti);
       if(selectedContinent){
         const ct=calculateContinentTrend(selectedContinent);
-        Plotly.addTraces("lineChart",{x:ct.map(d=>d.year),y:ct.map(d=>d.emissions),type:"scatter",mode:"lines",name:selectedContinent,line:{color:"#a855f7",width:2.5},yaxis:"y",hoverinfo:"skip"});
+        Plotly.addTraces("lineChart",{x:ct.map(d=>d.year),y:ct.map(d=>d.emissions),type:"scatter",mode:"lines",name:selectedContinent,line:{color:"#601A4A",width:2.5},yaxis:"y",hoverinfo:"skip"});
       }
       updateLegend();
     }
 
     //helper function greying outfunction function 
     function updateMapHighlight(selectedISO) {
-        const gd = document.getElementById("worldMap");
-        const trace = gd.data[0];
+ const gd = document.getElementById("worldMap");
 
+// Original map trace stays as-is
+const trace = gd.data[0];
 
-        // Use the original z values, not the current modified ones
-        const newZ = originalMapZ.map((v, i) => {
-          return trace.locations[i] === selectedISO ? v : 0; // gray out others
-        });
+// Build overlay z: 1 = grey, 0 = transparent
+const overlayZ = trace.locations.map(iso => iso === selectedISO ? 0 : 1);
 
-
-        const newColorscale = [
-          [0, "#9ca3af"], // gray
-          [1, "#dc2626"]  // main scale for selected
-        ];
-
-
-        Plotly.restyle(gd, { z: [newZ], colorscale: [newColorscale] }, [0]);
+// Check if overlay trace already exists (index 1)
+if (gd.data.length > 1 && gd.data[1].name === "overlay") {
+    Plotly.restyle(gd, { z: [overlayZ] }, [1]);
+} else {
+    // Add overlay trace
+    Plotly.addTraces(gd, {
+        type: "choropleth",
+        locations: trace.locations,
+        z: overlayZ,
+        showscale: false,
+        name: "overlay",
+        hoverinfo: "skip",
+        colorscale: [[0, "rgba(0,0,0,0)"], [1, "#f8fafc"]],
+        zmin: 0,
+        zmax: 1,
+        marker: { line: { width: 0 } }
+    });
+}
       }
 
 
@@ -581,13 +590,13 @@
       const legendContainer=document.getElementById("legendContainer");
       const gt=calculateGlobalTrend();
       const globalData=gt.find(d=>d.year===currentYear);
-      let html='<div class="legend-item" style="background:#63ACBE"><span>Global:</span><span class="legend-value">'+(globalData?globalData.emissions.toLocaleString():'N/A')+' Mt</span></div>';
-      html+='<div class="legend-item" style="background:#EE442F"><span>Temp:</span><span class="legend-value">'+(globalData?globalData.temperature.toFixed(2):'N/A')+'°C</span></div>';
+      let html='<div class="legend-item" style="background:#63ACBE"><span>Global emissions:</span><span class="legend-value">'+(globalData?globalData.emissions.toLocaleString():'N/A')+' Mt</span></div>';
+      html+='<div class="legend-item" style="background:#EE442F"><span>Temperature increase since 1970:</span><span class="legend-value">'+(globalData?globalData.temperature.toFixed(2):'N/A')+'°C</span></div>';
       
       if(selectedContinent){
         const ct=calculateContinentTrend(selectedContinent);
         const cd=ct.find(d=>d.year===currentYear);
-        html+='<div class="legend-item" style="background:#601A4A"><span>'+selectedContinent+' (Selected):</span><span class="legend-value">'+(cd?cd.emissions.toLocaleString():'N/A')+' Mt</span></div>';
+        html+='<div class="legend-item" style="background:#601A4A"><span>'+selectedContinent+' (Selected) Emissions:</span><span class="legend-value">'+(cd?cd.emissions.toLocaleString():'N/A')+' Mt</span></div>';
       }
       
       legendContainer.innerHTML=html;
@@ -617,11 +626,11 @@
           ${sectorHTML}
           <div class="detail-charts">
             <div>
-              <div class="card-header" style="margin-top:0;">Country Emissions per Capita, compared to G7-countries and Continent Extremes</div>
+              <div class="card-header" style="margin-top:0;"> ${cd.Name} Emissions per Capita, compared to G7-countries and ${cd.continent} Extremes</div>
               <div id="comparisonChart" style="width:100%; height:520px;"></div>
             </div>
             <div>
-              <div class="card-header" style="margin-top:0;">Sector Comparison Over Time</div>
+              <div class="card-header" style="margin-top:0;">Sector Comparison in ${cd.continent} Over Time  </div>
               <div class="sector-select-row">
                 <label for="sectorSelect">Sector:</label>
                 <select id="sectorSelect"></select>
@@ -629,12 +638,12 @@
               <div id="sectorChart" style="width:100%; height:520px;"></div>
             </div>
           </div>
-          <div class="card-header" style="margin-top:20px;">Sector Contributions (Stacked)</div>
+          <div class="card-header" style="margin-top:20px;">Sector Contributions in ${cd.Name}</div>
           <div id="sectorStackChart" style="width:100%; height:420px;"></div>
         </div>`;
 
       // Populate sector selector and render chart
-      const availableSectors=[...new Set(sectorData.map(r=>r.sector))].sort();
+      const availableSectors=[...new Set(sectorData.map(r=>r.sector))].sort().filter(s => s);
       const sel=document.getElementById("sectorSelect");
       sel.innerHTML=availableSectors.map(s=>`<option value="${s}">${s}</option>`).join("");
       const countrySectors=[...new Set(sectorData.filter(r=>r.iso_code===selectedCountry).map(r=>r.sector))];
@@ -751,7 +760,7 @@
         line:{color:"#dc2626", width:3},
         marker:{size:4, color:"#dc2626"},
         name:"Selected country",
-        hovertemplate:"%{x}: %{y:.4f} gCO₂e per capita<extra></extra>"
+        hovertemplate:"%{x}: %{y:.4f} TCO₂e per capita<extra></extra>"
       });
       traces.push({
         type:"scatter",
@@ -916,7 +925,7 @@
     function renderSectorStackChart(iso, highlightedSector){
       const ts = buildCountrySectorTimeSeries(iso);
       const xCats = ts.years.map(y=>String(y));
-      const palette = [ "#601A4A", "#9B2C6B", "#EE442F", "#F17D5B", "#63ACBE", "#94C5D3", "#BBD686", "#D9E9AA", "#F2C94C", "#E69F5A", "#8E5C96", "#3A7D7C" ];
+      const palette = ["#EE442F", "#F58231", "#FFE119", "#2E7D32", "#4363D8", "#601A4A", "#63ACBE", "#dbcada"];
 
       // Build traces with non-highlighted first, highlighted last for visual prominence
       const traces=[];
