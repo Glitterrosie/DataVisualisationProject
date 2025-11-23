@@ -176,6 +176,42 @@
     const tempByYear = {};
     const populationByKey = {};
 
+    // ==============================
+    // GLOBAL STATIC PERCENTILE BINS
+    // ==============================
+    const globalQuantiles = [0, 0.10, 0.25, 0.50, 0.75, 0.90, 0.97, 1];
+    let globalThresholds = [];
+    let globalBinPositions = []; // z-space positions (0..1)
+
+    function buildGlobalThresholds(){
+      const values = allData
+        .map(d => d.emissions_per_capita * 1_000_000)
+        .filter(v => Number.isFinite(v));
+
+      const sorted = [...values].sort((a,b)=>a-b);
+      if(!sorted.length){
+        globalThresholds = [0,1];
+        globalBinPositions = [0,1];
+        return;
+      }
+
+      globalThresholds = globalQuantiles.map(q=>{
+        const idx = Math.floor(q * (sorted.length-1));
+        return sorted[idx];
+      });
+
+      const nBins = globalThresholds.length;
+      globalBinPositions = globalThresholds.map((_,i)=> i/(nBins-1));
+    }
+
+    function binValue(v){
+      // return normalized z based on fixed globalThresholds
+      for(let i=0;i<globalThresholds.length;i++){
+        if(v <= globalThresholds[i]) return globalBinPositions[i];
+      }
+      return 1;
+    }
+
     async function init(){
       try {
         const mainResponse = await fetch("data/greenhouse_gas_with_population.csv");
@@ -206,6 +242,9 @@
           const pop = (d.emissions>0 && d.emissions_per_capita>0) ? (d.emissions / d.emissions_per_capita) : null;
           if(pop && isFinite(pop)) populationByKey[key] = pop;
         });
+
+        // Build global thresholds ONCE for static percentile bins
+        buildGlobalThresholds();
 
         const years=[...new Set(allData.map(d=>d.year))].sort((a,b)=>a-b);
         yearRange={min:years[0],max:years[years.length-1]};
@@ -424,18 +463,20 @@
 
     function createWorldMap(){
       const cyd = allData.filter(d=>d.year===currentYear);
+
+      // raw per-capita values (same unit as before)
       const gValues = cyd.map(d=>d.emissions_per_capita*1_000_000);
-      const sorted = [...gValues].sort((a,b)=>a-b);
-      const equalized = gValues.map(v=>sorted.findIndex(x=>x>=v)/(sorted.length-1));
 
+      // STATIC percentile bins using global thresholds
+      const binned = gValues.map(v => binValue(v));
 
-      originalMapZ = equalized.slice(); // store original values
+      originalMapZ = binned.slice(); // store original values
 
 
       const trace = {
         type: "choropleth",
         locations: cyd.map(d=>d.iso_code),
-        z: equalized,
+        z: binned,
         text: cyd.map(d=>d.Name),
         customdata: cyd.map(d=>[Math.round(d.emissions_per_capita*1_000_000).toLocaleString(), d.iso_code]),
         hovertemplate: "<b>%{text}</b><br><b>%{customdata[0]}</b> gCO₂e per capita<extra></extra>",
@@ -467,14 +508,9 @@
               font: { size: 10 },
               side: "bottom"
             },
-            tickvals: [0,0.25,0.5,0.75,1],
-            ticktext: [
-              Math.min(...gValues).toFixed(0),
-              sorted[Math.floor(sorted.length*0.25)].toFixed(0),
-              sorted[Math.floor(sorted.length*0.5)].toFixed(0),
-              sorted[Math.floor(sorted.length*0.75)].toFixed(0),
-              Math.max(...gValues).toFixed(0)
-            ],
+            // static positions + static global thresholds
+            tickvals: globalBinPositions,
+            ticktext: globalThresholds.map(v => Math.round(v).toLocaleString()),
             tickfont: { size: 9 }
           }
         },
@@ -503,25 +539,23 @@
 
     function updateWorldMap(){
       const cyd=allData.filter(d=>d.year===currentYear);
+
       const gValues=cyd.map(d=>d.emissions_per_capita*1_000_000);
-      const sorted=[...gValues].sort((a,b)=>a-b);
-      const equalized=gValues.map(v=>sorted.findIndex(x=>x>=v)/(sorted.length-1));
+
+      // STATIC percentile bins using global thresholds
+      const binned = gValues.map(v => binValue(v));
+
       const hoverValues=cyd.map(v=>Math.round(v.emissions_per_capita*1_000_000).toLocaleString());
 
 
-      Plotly.restyle("worldMap",{z:[equalized],locations:[cyd.map(d=>d.iso_code)],text:[cyd.map(d=>d.Name)],customdata:[cyd.map((d,i)=>[hoverValues[i],d.iso_code])]},[0]);
+      Plotly.restyle("worldMap",{z:[binned],locations:[cyd.map(d=>d.iso_code)],text:[cyd.map(d=>d.Name)],customdata:[cyd.map((d,i)=>[hoverValues[i],d.iso_code])]},[0]);
 
+      // colorbar stays static, no relayout needed
 
-      const ticktext=[Math.min(...gValues).toFixed(0),sorted[Math.floor(sorted.length*0.25)].toFixed(0),sorted[Math.floor(sorted.length*0.5)].toFixed(0),sorted[Math.floor(sorted.length*0.75)].toFixed(0),Math.max(...gValues).toFixed(0)];
-
-
-      Plotly.relayout("worldMap",{"coloraxis.colorbar.ticktext":ticktext});
-
-
-    let maxValue = Math.max(...gValues);
-    let maxIndex = gValues.indexOf(maxValue);
-    let maxCountry = cyd[maxIndex].Name;
-    console.log(`Highest per capita emissions in ${currentYear}: ${maxCountry} (${Math.round(maxValue).toLocaleString()} TCO₂ per capita)`);
+      let maxValue = Math.max(...gValues);
+      let maxIndex = gValues.indexOf(maxValue);
+      let maxCountry = cyd[maxIndex].Name;
+      console.log(`Highest per capita emissions in ${currentYear}: ${maxCountry} (${Math.round(maxValue).toLocaleString()} TCO₂ per capita)`);
     }
 
     function updateLineChartMarker(){
