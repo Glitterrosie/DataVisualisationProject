@@ -1163,7 +1163,9 @@
       //   [1, "#380606"], // 60+
       // ];
       // Bin edges in gCO₂e per capita
-      const BIN_EDGES = [0, 2, 5, 8, 12, 16, 20, 25, 30, 40, 60]; // 11 bins
+      // True data bins
+      const BIN_EDGES = [0, 2, 5, 8, 12, 16, 20, 25, 30, 40, 60, 100];
+
       const BIN_COLORS = [
         "#fff5f5", // 0–2
         "#fee0e0", // 2–5
@@ -1175,7 +1177,7 @@
         "#b91c1c", // 25–30
         "#8a1313", // 30–40
         "#5c0b0b", // 40–60
-        "#380606", // 60+
+        "#380606", // 60–100 (darkest)
       ];
 
       const COLOR_CMIN = 0;
@@ -1184,11 +1186,10 @@
       function buildDiscreteColorscale() {
         const cs = [];
         for (let i = 0; i < BIN_COLORS.length; i++) {
-          const start = BIN_EDGES[i] / COLOR_CMAX;
-          const end = BIN_EDGES[i + 1] / COLOR_CMAX || 1; // last extends to 1
-          const col = BIN_COLORS[i];
-          cs.push([start, col]);
-          cs.push([end, col]);
+          const start = BIN_EDGES[i] / 100;
+          const end = BIN_EDGES[i + 1] / 100;
+          cs.push([start, BIN_COLORS[i]]);
+          cs.push([end, BIN_COLORS[i]]);
         }
         return cs;
       }
@@ -1199,9 +1200,8 @@
         const cyd = allData.filter((d) => d.year === currentYear);
 
         const zVals = cyd.map((d) => {
-          const v = d.emissions_per_capita * 1_000_000; // T → g
-          if (!Number.isFinite(v)) return NaN; // no data -> not colored
-          return Math.min(v, COLOR_CMAX); // clamp 60+ into last bin
+          const v = d.emissions_per_capita * 1_000_000;
+          return Math.min(v, 100); // clamp 60+ into last bin (60–100)
         });
 
         const trace = {
@@ -1239,29 +1239,28 @@
           },
 
           coloraxis: {
-            cmin: COLOR_CMIN,
-            cmax: COLOR_CMAX,
+            cmin: 0,
+            cmax: 100,
             colorscale: discreteColorscale,
             colorbar: {
-              orientation: "h",
-              x: 0.5,
-              y: -0.12,
+              orientation: "h", // HORIZONTAL
+              thickness: 20, // height in pixels
+              len: 1, // 50% of plot width
+              x: 0.5, // center horizontally
               xanchor: "center",
+              y: -0.05, // position below map
+              yanchor: "top",
               tickmode: "array",
-              tickvals: BIN_EDGES, // 0,2,5,...,60
-              ticktext: BIN_EDGES.map((v, i) =>
-                i === BIN_EDGES.length - 1 ? "60+" : String(v)
-              ),
-              len: 0.75,
-              thickness: 22,
+              tickvals: [0, 2, 5, 8, 12, 16, 20, 25, 30, 40, 60],
+              ticktext: [0, 2, 5, 8, 12, 16, 20, 25, 30, 40, "60+"],
               title: {
-                text: "gCO₂e per capita",
+                text: "Emissions Per Capita (gCO₂e)",
+                side: "bottom",
                 font: { size: 11 },
               },
             },
           },
-
-          margin: { l: 0, r: 0, t: 0, b: 0 },
+          margin: { l: 0, r: 0, t: 0, b: 60 }, // increased bottom margin for colorbar
           paper_bgcolor: "rgba(0,0,0,0)",
         };
 
