@@ -222,7 +222,7 @@
 
       #worldMap {
         width: 100%;
-        height: 750px;
+        height: 600px;
         padding: 0;
         margin: 0;
       }
@@ -1224,7 +1224,15 @@
 
         const layout = {
           geo: {
-            projection: { type: "natural earth", scale: 1 },
+            domain: {
+              x: [0, 1], // takes full width (0% to 100%)
+              y: [0.01, 1], // takes most of height, leaving room for colorbar at bottom
+            },
+            projection: {
+              type: "natural earth",
+              scale: 1.0,
+            },
+            center: { lon: 0, lat: 10 }, // center the world view
             showcoastlines: true,
             coastlinecolor: "rgba(99,172,190,0.25)",
             coastlinewidth: 0.5,
@@ -1236,6 +1244,9 @@
             countrycolor: "rgba(255,255,255,0.4)",
             bgcolor: "rgba(0,0,0,0)",
             showframe: false,
+            // These settings lock the map
+            lataxis: { range: [-90, 90] },
+            lonaxis: { range: [-180, 180] },
           },
 
           coloraxis: {
@@ -1243,12 +1254,12 @@
             cmax: 100,
             colorscale: discreteColorscale,
             colorbar: {
-              orientation: "h", // HORIZONTAL
-              thickness: 20, // height in pixels
-              len: 1, // 50% of plot width
-              x: 0.5, // center horizontally
+              orientation: "h",
+              thickness: 20,
+              len: 0.9,
+              x: 0.5,
               xanchor: "center",
-              y: -0.05, // position below map
+              y: -0.01,
               yanchor: "top",
               tickmode: "array",
               tickvals: [0, 2, 5, 8, 12, 16, 20, 25, 30, 40, 60],
@@ -1260,8 +1271,9 @@
               },
             },
           },
-          margin: { l: 0, r: 0, t: 0, b: 60 }, // increased bottom margin for colorbar
+          margin: { l: 0, r: 0, t: 0, b: 0 },
           paper_bgcolor: "rgba(0,0,0,0)",
+          dragmode: false, // disable all dragging
         };
 
         Plotly.newPlot("worldMap", [trace], layout, {
