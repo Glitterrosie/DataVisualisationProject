@@ -57,7 +57,7 @@
         font-weight: 600;
         color: black;
         margin-bottom: 20px;
-        padding-bottom: 10px;
+        padding-bottom: 1px;
         border-bottom: 2px solid #f1f5f9;
       }
 
@@ -415,6 +415,50 @@
         border-color: #60a5fa;
         box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);
       }
+      /* The card itself */
+      .world-card {
+        padding: 0 !important;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; /* ⬅ prevents content from escaping */
+      }
+
+      /* Header stays fixed */
+      .world-card .card-header {
+        padding: 20px 25px;
+        border-bottom: 2px solid #f1f5f9;
+        flex: 0 0 auto;
+      }
+
+      /* This is the area the map can occupy */
+      .world-map-container {
+        flex: 1 1 auto;
+        width: 100%;
+        max-height: 550px; /* ⬅ LIMIT total map height */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden; /* ⬅ crop anything exceeding */
+        position: relative;
+      }
+
+      /* The Plotly map itself */
+      #worldMap {
+        width: 100% !important;
+        height: 100% !important;
+
+        max-width: 1100px; /* ⬅ control map width size */
+        max-height: 520px; /* ⬅ control map height size */
+        margin: auto;
+      }
+
+      /* Force Plotly’s internal containers to scale */
+      #worldMap .plot-container,
+      #worldMap .svg-container,
+      #worldMap .main-svg {
+        width: 100% !important;
+        height: 100% !important;
+      }
     </style>
   </head>
   <body>
@@ -465,9 +509,11 @@
             </div>
             <!-- end wrapper -->
           </div>
-          <div class="card">
+          <div class="card world-card">
             <div class="card-header">Emissions Per Capita on the World Map</div>
-            <div id="worldMap"></div>
+            <div class="world-map-container">
+              <div id="worldMap"></div>
+            </div>
           </div>
         </div>
         <div class="card" id="countryDetails" style="display: none"></div>
@@ -1225,13 +1271,14 @@
         const layout = {
           geo: {
             domain: {
-              x: [0, 1], // takes full width (0% to 100%)
-              y: [0.01, 1], // takes most of height, leaving room for colorbar at bottom
+              x: [0, 1],
+              y: [0, 1],
             },
             projection: {
               type: "natural earth",
-              scale: 1.0,
+              scale: 0.9,
             },
+            fitbounds: "locations",
             center: { lon: 0, lat: 10 }, // center the world view
             showcoastlines: true,
             coastlinecolor: "rgba(99,172,190,0.25)",
@@ -1298,6 +1345,9 @@
           });
         });
       }
+      window.addEventListener("resize", () => {
+        Plotly.Plots.resize(document.getElementById("worldMap"));
+      });
 
       function removeMapHighlight() {
         const gd = document.getElementById("worldMap");
@@ -2085,6 +2135,12 @@
           [ti]
         );
       }
+      window.addEventListener("load", () => {
+        Plotly.Plots.resize(document.getElementById("worldMap"));
+      });
+      window.addEventListener("resize", () => {
+        Plotly.Plots.resize(document.getElementById("worldMap"));
+      });
 
       init();
     </script>
