@@ -1119,17 +1119,58 @@
       }
 
       let originalMapZ = []; // global variable
+      // Convert TCO₂e → gCO₂e and assign a 0–11 bin
+      function perCapitaIntervalColor(valueTons) {
+        if (!valueTons || !isFinite(valueTons)) return 0;
+        const g = valueTons * 1_000_000; // convert TCO₂ → gCO₂
+
+        if (g > 60) return 11; // super extreme
+        if (g > 40) return 10; // extreme
+        if (g > 30) return 9; // very high
+        if (g > 25) return 8; // high+
+        if (g > 20) return 7; // high
+        if (g > 16) return 6; // upper mid
+        if (g > 12) return 5; // mid
+        if (g > 8) return 4; // lower mid
+        if (g > 5) return 3; // low
+        if (g > 2) return 2; // very low
+        if (g > 0) return 1; // ultra low
+        return 0; // No data
+      }
+      const discreteColorscale = [
+        [0 / 11, "#ffffff"],
+        [1 / 11, "#ffffff"], // 0 No data
+        [1 / 11, "#fff5f5"],
+        [2 / 11, "#fff5f5"], // 1 0–2
+        [2 / 11, "#fee0e0"],
+        [3 / 11, "#fee0e0"], // 2 2–5
+        [3 / 11, "#fcbaba"],
+        [4 / 11, "#fcbaba"], // 3 5–8
+        [4 / 11, "#fa8f8f"],
+        [5 / 11, "#fa8f8f"], // 4 8–12
+        [5 / 11, "#f66969"],
+        [6 / 11, "#f66969"], // 5 12–16
+        [6 / 11, "#ef4444"],
+        [7 / 11, "#ef4444"], // 6 16–20
+        [7 / 11, "#dc2626"],
+        [8 / 11, "#dc2626"], // 7 20–25
+        [8 / 11, "#b91c1c"],
+        [9 / 11, "#b91c1c"], // 8 25–30
+        [9 / 11, "#8a1313"],
+        [10 / 11, "#8a1313"], // 9 30–40
+        [10 / 11, "#5c0b0b"],
+        [11 / 11, "#5c0b0b"], // 10 40–60
+        [11 / 11, "#380606"],
+        [1, "#380606"], // 11 60+
+      ];
 
       function createWorldMap() {
         const cyd = allData.filter((d) => d.year === currentYear);
 
-        // raw per-capita values (same unit as before)
-        const gValues = cyd.map((d) => d.emissions_per_capita * 1_000_000);
-
-        // STATIC percentile bins using global thresholds
-        const binned = gValues.map((v) => binValue(v));
-
-        originalMapZ = binned.slice(); // store original values
+        // Convert to bins 0–11
+        const binned = cyd.map((d) =>
+          perCapitaIntervalColor(d.emissions_per_capita)
+        );
 
         const trace = {
           type: "choropleth",
@@ -1141,18 +1182,10 @@
             d.iso_code,
           ]),
           hovertemplate:
-            "<b>%{text}</b><br><b>%{customdata[0]}</b> gCO₂e per capita<extra></extra>",
-          colorscale: [
-            [0, "#fef2f2"],
-            [0.15, "#fee2e2"],
-            [0.3, "#fecaca"],
-            [0.5, "#fca5a5"],
-            [0.7, "#f87171"],
-            [0.85, "#ef4444"],
-            [1, "#dc2626"],
-          ],
+            "<b>%{text}</b><br>%{customdata[0]} gCO₂e per capita<extra></extra>",
+          colorscale: discreteColorscale,
           zmin: 0,
-          zmax: 1,
+          zmax: 11,
           marker: { line: { color: "rgba(255,255,255,0.6)", width: 0.5 } },
           coloraxis: "coloraxis",
         };
@@ -1171,38 +1204,44 @@
             countrycolor: "rgba(255,255,255,0.4)",
             bgcolor: "rgba(0,0,0,0)",
             showframe: false,
-            domain: { x: [0, 1], y: [0, 1] },
           },
-          margin: { l: 0, r: 0, t: 0, b: 0 }, // remove extra space
+
           coloraxis: {
-            colorscale: trace.colorscale,
             cmin: 0,
-            cmax: 1,
+            cmax: 11,
+            colorscale: discreteColorscale,
             colorbar: {
-              orientation: "h", // horizontal
-              x: 0.5, // center
-              y: -0.12, // below the map
+              orientation: "h",
+              x: 0.5,
+              y: -0.12,
               xanchor: "center",
-              yanchor: "top",
-              thickness: 20,
-              len: 0.7,
+              tickvals: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+              ticktext: [
+                "No data",
+                "0–2",
+                "2–5",
+                "5–8",
+                "8–12",
+                "12–16",
+                "16–20",
+                "20–25",
+                "25–30",
+                "30–40",
+                "40–60",
+                "60+",
+              ],
+              len: 0.75,
+              thickness: 22,
               title: {
-                text: "CO₂e per capita (TCO₂e)",
-                font: { size: 10 },
-                side: "bottom",
+                text: "gCO₂e per capita",
+                font: { size: 11 },
               },
-              // static positions + static global thresholds
-              tickvals: globalBinPositions,
-              ticktext: globalThresholds.map((v) =>
-                Math.round(v).toLocaleString()
-              ),
-              tickfont: { size: 9 },
             },
           },
+
           margin: { l: 0, r: 0, t: 0, b: 0 },
           width: 900,
           paper_bgcolor: "rgba(0,0,0,0)",
-          dragmode: false,
         };
 
         Plotly.newPlot("worldMap", [trace], layout, {
@@ -1211,26 +1250,24 @@
           scrollZoom: false,
         }).then((gd) => {
           gd.on("plotly_click", function (data) {
-            const iso = data.points[0].location; // <--- IMPORTANT FIX
+            const iso = data.points[0].location;
 
-            // Toggle off
+            // Toggle
             if (selectedCountry === iso) {
               clearCountrySelection();
               removeMapHighlight();
               return;
             }
 
-            // Normal select
             const cd = allData
               .filter((r) => r.year === currentYear)
               .find((r) => r.iso_code === iso);
 
-            if (cd) {
-              selectCountry(iso, cd.continent);
-            }
+            if (cd) selectCountry(iso, cd.continent);
           });
         });
       }
+
       function removeMapHighlight() {
         const gd = document.getElementById("worldMap");
 
@@ -1255,35 +1292,38 @@
       function updateWorldMap() {
         const cyd = allData.filter((d) => d.year === currentYear);
 
-        const gValues = cyd.map((d) => d.emissions_per_capita * 1_000_000);
-
-        // STATIC percentile bins using global thresholds
-        const binned = gValues.map((v) => binValue(v));
-
-        const hoverValues = cyd.map((v) =>
-          Math.round(v.emissions_per_capita * 1_000_000).toLocaleString()
+        // Recompute bins 0–11
+        const binned = cyd.map((d) =>
+          perCapitaIntervalColor(d.emissions_per_capita)
         );
 
+        // Apply update
         Plotly.restyle(
           "worldMap",
           {
             z: [binned],
             locations: [cyd.map((d) => d.iso_code)],
             text: [cyd.map((d) => d.Name)],
-            customdata: [cyd.map((d, i) => [hoverValues[i], d.iso_code])],
+            customdata: [
+              cyd.map((d) => [
+                Math.round(d.emissions_per_capita * 1_000_000).toLocaleString(),
+                d.iso_code,
+              ]),
+            ],
           },
           [0]
         );
 
-        // colorbar stays static, no relayout needed
-
+        // Log highest country
+        const gValues = cyd.map((d) => d.emissions_per_capita * 1_000_000);
         let maxValue = Math.max(...gValues);
         let maxIndex = gValues.indexOf(maxValue);
         let maxCountry = cyd[maxIndex].Name;
+
         console.log(
           `Highest per capita emissions in ${currentYear}: ${maxCountry} (${Math.round(
             maxValue
-          ).toLocaleString()} TCO₂ per capita)`
+          ).toLocaleString()} gCO₂e per capita)`
         );
       }
 
