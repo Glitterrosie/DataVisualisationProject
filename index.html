@@ -176,44 +176,6 @@
         font-weight: 600;
       }
 
-      /* Derivative (lasagna) bar above the line chart */
-      .derivative-bar-wrapper {
-        padding: 0 70px;
-        box-sizing: border-box;
-        margin-bottom: 8px;
-      }
-      .derivative-bar {
-        height: 20px;
-        border-radius: 6px;
-        overflow: hidden;
-        background: #fff;
-        display: flex;
-        position: relative;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-      }
-      .deriv-segment {
-        height: 100%;
-        flex-shrink: 0;
-        transition: background-color 0.2s ease;
-      }
-      .deriv-marker {
-        position: absolute;
-        top: -6px;
-        bottom: -6px;
-        width: 3px;
-        background: #dc2626;
-        box-shadow: 0 0 6px rgba(220, 66, 66, 0.5);
-        pointer-events: none;
-        transform: translateX(-50%);
-        border-radius: 2px;
-      }
-      .derivative-legend {
-        font-size: 0.85em;
-        color: #475569;
-        text-align: center;
-        margin-bottom: 6px;
-      }
-
       .chart-wrapper {
         width: 100%;
         padding: 0 70px; /* or whatever horizontal padding you want */
@@ -482,13 +444,6 @@
 
             <!-- new wrapper to align chart & slider -->
             <div class="chart-wrapper">
-              <div class="derivative-bar-wrapper" aria-hidden="true">
-                <div id="derivativeBar" class="derivative-bar"></div>
-                <div id="derivativeLegend" class="derivative-legend">
-                  <span style="color: #ef4444">■ increase</span> &nbsp;
-                  <span style="color: #3b82f6">■ decrease</span>
-                </div>
-              </div>
               <div id="lineChart"></div>
               <div class="legend-container" id="legendContainer"></div>
               <div class="year-control-wrapper">
@@ -527,203 +482,6 @@
         selectedContinent = null,
         currentYear = 2023,
         yearRange = { min: 1990, max: 2023 };
-
-      const isoToContinent = {
-        AFG: "Asia",
-        ALB: "Europe",
-        DZA: "Africa",
-        AND: "Europe",
-        AGO: "Africa",
-        ATG: "North America",
-        ARG: "South America",
-        ARM: "Asia",
-        AUS: "Oceania",
-        AUT: "Europe",
-        AZE: "Asia",
-        BHS: "North America",
-        BHR: "Asia",
-        BGD: "Asia",
-        BRB: "North America",
-        BLR: "Europe",
-        BEL: "Europe",
-        BLZ: "North America",
-        BEN: "Africa",
-        BTN: "Asia",
-        BOL: "South America",
-        BIH: "Europe",
-        BWA: "Africa",
-        BRA: "South America",
-        BRN: "Asia",
-        BGR: "Europe",
-        BFA: "Africa",
-        BDI: "Africa",
-        CPV: "Africa",
-        KHM: "Asia",
-        CMR: "Africa",
-        CAN: "North America",
-        CAF: "Africa",
-        TCD: "Africa",
-        CHL: "South America",
-        CHN: "Asia",
-        COL: "South America",
-        COM: "Africa",
-        CRI: "North America",
-        HRV: "Europe",
-        CUB: "North America",
-        CYP: "Europe",
-        CZE: "Europe",
-        DNK: "Europe",
-        DJI: "Africa",
-        DMA: "North America",
-        DOM: "North America",
-        ECU: "South America",
-        EGY: "Africa",
-        SLV: "North America",
-        GNQ: "Africa",
-        ERI: "Africa",
-        EST: "Europe",
-        SWZ: "Africa",
-        ETH: "Africa",
-        FJI: "Oceania",
-        FIN: "Europe",
-        FRA: "Europe",
-        GAB: "Africa",
-        GMB: "Africa",
-        GEO: "Asia",
-        DEU: "Europe",
-        GHA: "Africa",
-        GRC: "Europe",
-        GRD: "North America",
-        GTM: "North America",
-        GIN: "Africa",
-        GNB: "Africa",
-        GUY: "South America",
-        HTI: "North America",
-        HND: "North America",
-        HUN: "Europe",
-        ISL: "Europe",
-        IND: "Asia",
-        IDN: "Asia",
-        IRN: "Asia",
-        IRQ: "Asia",
-        IRL: "Europe",
-        ISR: "Asia",
-        ITA: "Europe",
-        CIV: "Africa",
-        JAM: "North America",
-        JPN: "Asia",
-        JOR: "Asia",
-        KAZ: "Asia",
-        KEN: "Africa",
-        KIR: "Oceania",
-        PRK: "Asia",
-        KOR: "Asia",
-        KWT: "Asia",
-        KGZ: "Asia",
-        LAO: "Asia",
-        LVA: "Europe",
-        LBN: "Asia",
-        LSO: "Africa",
-        LBR: "Africa",
-        LBY: "Africa",
-        LIE: "Europe",
-        LTU: "Europe",
-        LUX: "Europe",
-        MDG: "Africa",
-        MWI: "Africa",
-        MYS: "Asia",
-        MDV: "Asia",
-        MLI: "Africa",
-        MLT: "Europe",
-        MHL: "Oceania",
-        MRT: "Africa",
-        MUS: "Africa",
-        MEX: "North America",
-        FSM: "Oceania",
-        MDA: "Europe",
-        MCO: "Europe",
-        MNG: "Asia",
-        MNE: "Europe",
-        MAR: "Africa",
-        MOZ: "Africa",
-        MMR: "Asia",
-        NAM: "Africa",
-        NRU: "Oceania",
-        NPL: "Asia",
-        NLD: "Europe",
-        NZL: "Oceania",
-        NIC: "North America",
-        NER: "Africa",
-        NGA: "Africa",
-        MKD: "Europe",
-        NOR: "Europe",
-        OMN: "Asia",
-        PAK: "Asia",
-        PLW: "Oceania",
-        PAN: "North America",
-        PNG: "Oceania",
-        PRY: "South America",
-        PER: "South America",
-        PHL: "Asia",
-        POL: "Europe",
-        PRT: "Europe",
-        QAT: "Asia",
-        ROU: "Europe",
-        RUS: "Europe/Asia",
-        RWA: "Africa",
-        KNA: "North America",
-        LCA: "North America",
-        VCT: "North America",
-        WSM: "Oceania",
-        SMR: "Europe",
-        STP: "Africa",
-        SAU: "Asia",
-        SEN: "Africa",
-        SRB: "Europe",
-        SYC: "Africa",
-        SLE: "Africa",
-        SGP: "Asia",
-        SXM: "North America",
-        SVK: "Europe",
-        SVN: "Europe",
-        SLB: "Oceania",
-        SOM: "Africa",
-        ZAF: "Africa",
-        SSD: "Africa",
-        ESP: "Europe",
-        LKA: "Asia",
-        SDN: "Africa",
-        SUR: "South America",
-        SWE: "Europe",
-        CHE: "Europe",
-        SYR: "Asia",
-        TWN: "Asia",
-        TJK: "Asia",
-        TZA: "Africa",
-        THA: "Asia",
-        TLS: "Asia",
-        TGO: "Africa",
-        TON: "Oceania",
-        TTO: "North America",
-        TUN: "Africa",
-        TUR: "Asia",
-        TKM: "Asia",
-        TUV: "Oceania",
-        UGA: "Africa",
-        UKR: "Europe",
-        ARE: "Asia",
-        GBR: "Europe",
-        USA: "North America",
-        URY: "South America",
-        UZB: "Asia",
-        VUT: "Oceania",
-        VAT: "Europe",
-        VEN: "South America",
-        VNM: "Asia",
-        YEM: "Asia",
-        ZMB: "Africa",
-        ZWE: "Africa",
-      };
 
       const tempByYear = {};
       const populationByKey = {};
@@ -792,15 +550,12 @@
             skipEmptyLines: true,
           }).data; // NEW
 
-          allData.forEach((row) => {
-            row.continent = isoToContinent[row.iso_code] || "Unknown";
-          });
-          allData = allData.filter(
-            (row) =>
-              row.year &&
-              row.iso_code &&
-              row.emissions_per_capita &&
-              row.emissions
+          allData = allData.filter((row) =>
+            row.year &&
+            row.iso_code &&
+            row.emissions_per_capita &&
+            row.emissions &&
+            row.continent
           );
 
           tempData.forEach((d) => {
@@ -878,7 +633,6 @@
           updateWorldMap();
           updateLineChartMarker();
           updateLegend();
-          updateDerivativeBar(); // move marker when year changes
           if (selectedCountry) updateCountryDetails();
           // update sector chart year marker if visible without rebuilding
           updateSectorChartMarker();
@@ -1113,56 +867,8 @@
           Plotly.Plots.resize(document.getElementById("lineChart"));
         });
         updateLegend();
-        createDerivativeBar(); // build derivative (lasagna) bar after plotting
       }
 
-      // build the 'lasagna' derivative bar with a smooth diverging color scale and place a year marker
-      function createDerivativeBar() {
-        const container = document.getElementById("derivativeBar");
-        container.innerHTML = "";
-        const gt = calculateGlobalTrend(); // sorted by year
-        if (!gt.length) return;
-        const n = gt.length;
-        const diffs = new Array(n).fill(0);
-        for (let i = 1; i < n; i++)
-          diffs[i] = gt[i].emissions - gt[i - 1].emissions;
-        const maxAbs = Math.max(...diffs.map(Math.abs), 0.000001);
-
-        for (let i = 0; i < n; i++) {
-          const seg = document.createElement("div");
-          seg.className = "deriv-segment";
-          seg.style.flexBasis = 100 / n + "%";
-          const v = diffs[i];
-          // compute smooth diverging color
-          const col = i === 0 ? "#f8fafc" : colorForValue(v, maxAbs);
-          seg.style.background = col;
-          seg.title =
-            gt[i].year +
-            " — " +
-            (i === 0 ? "n/a" : (v > 0 ? "+" : "") + v.toFixed(1) + " Mt");
-          container.appendChild(seg);
-        }
-
-        let marker = document.getElementById("derivMarker");
-        if (!marker) {
-          marker = document.createElement("div");
-          marker.id = "derivMarker";
-          marker.className = "deriv-marker";
-          container.appendChild(marker);
-        }
-        updateDerivativeBar(); // position marker for currentYear
-      }
-
-      function updateDerivativeBar() {
-        const marker = document.getElementById("derivMarker");
-        const gt = calculateGlobalTrend();
-        if (!marker || !gt.length) return;
-        const min = gt[0].year,
-          max = gt[gt.length - 1].year;
-        const denom = max - min || 1;
-        const pct = ((currentYear - min) / denom) * 100;
-        marker.style.left = pct + "%";
-      }
 
       let originalMapZ = []; // global variable
       // // Convert TCO₂e → gCO₂e and assign a 0–11 bin
