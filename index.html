@@ -483,6 +483,7 @@
         currentYear = 2023,
         yearRange = { min: 1990, max: 2023 };
 
+
       const tempByYear = {};
       const populationByKey = {};
 
@@ -550,12 +551,12 @@
             skipEmptyLines: true,
           }).data; // NEW
 
-          allData = allData.filter((row) =>
-            row.year &&
-            row.iso_code &&
-            row.emissions_per_capita &&
-            row.emissions &&
-            row.continent
+          allData = allData.filter(
+            (row) =>
+              row.year &&
+              row.iso_code &&
+              row.emissions_per_capita &&
+              row.emissions
           );
 
           tempData.forEach((d) => {
