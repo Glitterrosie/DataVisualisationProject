@@ -44,7 +44,17 @@
         color: #64748b;
         font-size: 1em;
       }
-
+      .info-box {
+        background: #f0f9ff;
+        border-left: 4px solid #63ACBE;
+        padding: 20px 25px;
+      }
+      .info-box p {
+        color: #1e293b;
+        font-size: 1.0em;
+        line-height: 1.6;
+        margin: 0;
+      }
       .card {
         background: white;
         border-radius: 12px;
@@ -274,7 +284,7 @@
         color: #1e293b;
       }
       .metric-unit {
-        font-size: 0.5em;
+        font-size: 1.0em;
         color: #64748b;
         font-weight: 600;
       }
@@ -377,6 +387,10 @@
         border-color: #60a5fa;
         box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);
       }
+      #sectorSelect option {
+        font-size: 2.0rem;  /* ← NEU HINZUFÜGEN */
+        padding: 8px;
+      }
       /* The card itself */
       .world-card {
         padding: 0 !important;
@@ -426,10 +440,17 @@
   <body>
     <div class="container">
       <div class="header">
-        <h1>🌍 Global Greenhouse Gas Emissions Dashboard</h1>
+        <h1>🌍 Greenhouse Gas Emissions Dashboard</h1>
         <p>Emissions across countries, regions & sectors • 1970-2024</p>
       </div>
-
+      <div class="card info-box">
+        <p>
+          This dashboard provides insights into <b>global greenhouse gas emissions data</b>. How are global emissions evolving and how far are we to reach the <b>Paris Climate Goals</b>? 
+          Explore emissions trends, compare countries and regions, and analyze sector-specific contributions. Use the <b>year slider</b> to navigate through different time periods and <b>click on countries</b> to see detailed breakdowns.
+          <br><br>
+          The unit used is <b>MtCO₂eq</b> (or respectively <b>tCO₂eq</b>), which are CO₂ equivalent emissions, a standard unit to measure greenhouse gas emissions by converting different gases into the equivalent amount of CO₂ based on their global warming potential.
+        </p>
+      </div>
       <div id="loading" class="card" style="text-align: center; padding: 60px">
         <div class="spinner"></div>
         <p style="color: #64748b; font-weight: 600">
@@ -440,7 +461,7 @@
       <div id="mainContent" style="display: none">
         <div class="main-grid">
           <div class="card chart-section">
-            <div class="card-header">Global Emissions Trend</div>
+            <div class="card-header">Global Greenhouse Gas Emissions Development</div>
 
             <!-- new wrapper to align chart & slider -->
             <div class="chart-wrapper">
@@ -465,9 +486,15 @@
             <!-- end wrapper -->
           </div>
           <div class="card world-card">
-            <div class="card-header">Emissions Per Capita on the World Map</div>
+            <div class="card-header">Map on the Emissions per Capita</div>
             <div class="world-map-container">
               <div id="worldMap"></div>
+            </div>
+            <!-- Textfeld NACH world-map-container, aber INNERHALB von world-card -->
+            <div class="info-box" style="margin-top: 15px;">
+              <p>
+                Click on a Country to get more Details!
+              </p>
             </div>
           </div>
         </div>
@@ -515,31 +542,26 @@
         globalBinPositions = globalThresholds.map((_, i) => i / (nBins - 1));
       }
 
-      function binValue(v) {
-        // return normalized z based on fixed globalThresholds
-        for (let i = 0; i < globalThresholds.length; i++) {
-          if (v <= globalThresholds[i]) return globalBinPositions[i];
-        }
-        return 1;
-      }
 
       async function init() {
         try {
           const mainResponse = await fetch(
-            "data/greenhouse_gas_with_population.csv"
+            "data/greenhouse_gas_with_population.csv",
+            { cache: "no-store" }
           );
           const sectorResponse = await fetch(
             "data/greenhouse_gas_per_sector.csv"
           );
           const tempResponse = await fetch(
             "data/global_temperature_increase.csv"
-          ); // NEW
+          );
 
           allData = Papa.parse(await mainResponse.text(), {
             header: true,
             dynamicTyping: true,
             skipEmptyLines: true,
           }).data;
+          console.log('Headers:', Object.keys(allData[0]));
           sectorData = Papa.parse(await sectorResponse.text(), {
             header: true,
             dynamicTyping: true,
@@ -551,13 +573,20 @@
             skipEmptyLines: true,
           }).data; // NEW
 
-          allData = allData.filter(
+           allData = allData.filter(
             (row) =>
               row.year &&
               row.iso_code &&
               row.emissions_per_capita &&
               row.emissions
           );
+
+          // Replace empty/missing continents with "Undefined"
+          allData.forEach((row) => {
+            if (!row.continent || row.continent.trim() === '') {
+              row.continent = 'Undefined';
+            }
+          });
 
           tempData.forEach((d) => {
             if (d.year != null && d.temperature_increase != null) {
@@ -717,10 +746,12 @@
       function createLineChart() {
         const gt = calculateGlobalTrend();
         const maxE = Math.max(...gt.map((d) => d.emissions));
+        const chartMax = Math.ceil(maxE / 10) * 10; // Use consistent max value
+
         const milestones = [
-          { year: 2015, label: "Paris" },
-          { year: 2018, label: "COP24" },
-          { year: 2023, label: "COP28" },
+          { year: 2015, label: "Paris Agreement Adoption" },
+          { year: 2018, label: "COP24 Katowice" },
+          { year: 2023, label: "COP28 Global Stocktake" },
         ];
 
         const traces = [
@@ -729,7 +760,7 @@
             y: gt.map((d) => d.emissions),
             type: "scatter",
             mode: "lines",
-            name: "Global",
+            name: "Global Greenhouse Gas Emissions",
             line: { color: "#63ACBE", width: 3 },
             yaxis: "y",
             hoverinfo: "x+y",
@@ -739,42 +770,36 @@
             y: gt.map((d) => d.temperature),
             type: "scatter",
             mode: "lines",
-            name: "Temperature increase",
+            name: "Global Temperature Increase",
             line: { color: "#EE442F", width: 2, dash: "dot" },
             yaxis: "y2",
             hoverinfo: "x+y",
           },
         ];
 
-        // continents removed from the top line chart
-
+        // ---- Milestones (just lines, no text) ----
+        const milestoneColor = "#BBD686";
         milestones.forEach((m) => {
           traces.push({
             x: [m.year, m.year],
-            y: [0, maxE * 0.95],
+            y: [0, chartMax], // Changed: from 0 to full chart height
             type: "scatter",
             mode: "lines",
-            name: m.label,
-            line: { color: "#BBD686", width: 1, dash: "dot" },
+            line: {
+              color: milestoneColor,
+              width: 1.2,
+              dash: "dot",
+            },
             showlegend: false,
             hoverinfo: "skip",
-          });
-
-          traces.push({
-            x: [m.year],
-            y: [-maxE * 0.05],
-            type: "scatter",
-            mode: "text",
-            text: [m.label],
-            textposition: "bottom center",
-            showlegend: false,
-            hoverinfo: "skip",
+            yaxis: "y",
           });
         });
 
+        // selected year line
         traces.push({
           x: [currentYear, currentYear],
-          y: [0, Math.ceil(maxE / 10) * 10],
+          y: [0, chartMax], // Changed: from 0 to full chart height
           type: "scatter",
           mode: "lines",
           name: "Selected",
@@ -786,45 +811,26 @@
 
         const layout = {
           xaxis: {
-            title: "",
             showgrid: true,
             gridcolor: "#f1f5f9",
             range: [yearRange.min, yearRange.max],
             tickfont: { size: 10 },
           },
           yaxis: {
-            title: {
-              text: "Emissions (TCO₂e)",
-              font: { size: 11, color: "black" },
-            },
+            title: "Greenhouse Gas Emissions (MtCO₂eq)",
             showgrid: true,
             gridcolor: "#f1f5f9",
-            tickfont: { color: "black", size: 9 },
-            range: [0, Math.ceil(maxE / 10) * 10],
-            zeroline: true,
+            range: [0, chartMax],
             tickformat: "~s",
           },
           yaxis2: {
-            title: {
-              text: "Temperature increase from 1970 (°C)",
-              font: { size: 11, color: "black" },
-            },
+            title: "Temperature Icrease(°C)",
             overlaying: "y",
             side: "right",
-            showgrid: false,
             range: [0, 2.5],
-            tickfont: { color: "black", size: 9 },
-            tickvals: [0, 0.5, 1.0, 1.5, 2.0, 2.5],
-            ticktext: [
-              "0",
-              "0.5",
-              "1.0",
-              '<span style="color:#F2C94C">1.5</span>',
-              '<span style="color:#F2C94C">2.0</span>',
-              "2.5",
-            ],
           },
           shapes: [
+            // 1.5°C line
             {
               type: "line",
               x0: yearRange.min,
@@ -834,6 +840,7 @@
               yref: "y2",
               line: { color: "#F2C94C", width: 2, dash: "dash" },
             },
+            // 2°C line
             {
               type: "line",
               x0: yearRange.min,
@@ -844,6 +851,7 @@
               line: { color: "#F2C94C", width: 2, dash: "dash" },
             },
           ],
+          annotations: [], // Initialize annotations array
           margin: { l: 70, r: 70, t: 10, b: 40 },
           paper_bgcolor: "rgba(0,0,0,0)",
           plot_bgcolor: "#FAFAFA",
@@ -852,23 +860,37 @@
             x: 0.5,
             xanchor: "center",
             y: -0.15,
-            bgcolor: "rgba(255,255,255,0.9)",
             font: { size: 10 },
-            bordercolor: "#e2e8f0",
-            borderwidth: 1,
           },
-          // showlegend: false,
           hovermode: true,
         };
+
+        // Add rotated milestone labels as annotations
+        milestones.forEach((m) => {
+          layout.annotations.push({
+            x: m.year,
+            xref: 'x',
+            y: 0, // Changed: position at the very bottom
+            yref: 'y',
+            text: m.label,
+            textangle: -90,
+            showarrow: false,
+            font: {
+              size: 11,
+              color: milestoneColor,
+            },
+            xanchor: "right",
+            yanchor: "bottom",
+            xshift: -5,
+          });
+        });
 
         Plotly.newPlot("lineChart", traces, layout, {
           responsive: true,
           displayModeBar: false,
-        }).then(() => {
-          Plotly.Plots.resize(document.getElementById("lineChart"));
         });
-        updateLegend();
       }
+
 
 
       let originalMapZ = []; // global variable
@@ -961,13 +983,13 @@
           type: "choropleth",
           locations: cyd.map((d) => d.iso_code),
           z: zVals,
-          text: cyd.map((d) => d.Name),
+          text: cyd.map((d) => d.country),
           customdata: cyd.map((d) => [
             Math.round(d.emissions_per_capita * 1_000_000).toLocaleString(),
             d.iso_code,
           ]),
           hovertemplate:
-            "<b>%{text}</b><br>%{customdata[0]} gCO₂e per capita<extra></extra>",
+            "<b>%{text}</b><br>%{customdata[0]} tCO₂eq per Capita<extra></extra>",
           colorscale: discreteColorscale,
           zmin: COLOR_CMIN,
           zmax: COLOR_CMAX,
@@ -1019,7 +1041,7 @@
               tickvals: [0, 2, 5, 8, 12, 16, 20, 25, 30, 40, 60],
               ticktext: [0, 2, 5, 8, 12, 16, 20, 25, 30, 40, "60+"],
               title: {
-                text: "Emissions Per Capita (gCO₂e)",
+                text: "Emissions per Capita (tCO₂eq)",
                 side: "bottom",
                 font: { size: 11 },
               },
@@ -1044,11 +1066,7 @@
               return;
             }
 
-            const cd = allData
-              .filter((r) => r.year === currentYear)
-              .find((r) => r.iso_code === iso);
-
-            if (cd) selectCountry(iso, cd.continent);
+            selectCountry(iso);
           });
         });
       }
@@ -1106,12 +1124,15 @@
       function updateLineChartMarker() {
         const gt = calculateGlobalTrend();
         const maxE = Math.max(...gt.map((d) => d.emissions));
+        const chartMax = Math.ceil(maxE / 10) * 10; // Use consistent max value
+        
         const ti = selectedContinent
           ? document.getElementById("lineChart").data.length - 2
           : document.getElementById("lineChart").data.length - 1;
+        
         Plotly.update(
           "lineChart",
-          { x: [[currentYear, currentYear]], y: [[0, maxE * 0.95]] },
+          { x: [[currentYear, currentYear]], y: [[0, chartMax]] }, // Changed to full height
           {},
           [ti]
         );
@@ -1172,9 +1193,12 @@
         }
       }
 
-      function selectCountry(iso, continent) {
+      function selectCountry(iso) {
         selectedCountry = iso;
-        selectedContinent = continent;
+        
+        // Find continent from the data
+        const countryData = allData.find(d => d.iso_code === iso);
+        selectedContinent = countryData ? countryData.continent : null;
 
         updateMapHighlight(iso); // <-- highlight the selected country
         updateContinentLine();
@@ -1193,13 +1217,13 @@
         const gt = calculateGlobalTrend();
         const globalData = gt.find((d) => d.year === currentYear);
         let html =
-          '<div class="legend-item" style="background:#63ACBE"><span>Global emissions:</span><span class="legend-value">' +
+          '<div class="legend-item" style="background:#63ACBE"><span>Global Greenhouse Gas Emissions:</span><span class="legend-value">' +
           (globalData ? globalData.emissions.toLocaleString() : "N/A") +
-          " Mt</span></div>";
+          " MtCO₂eq</span></div>";
         html +=
-          '<div class="legend-item" style="background:#EE442F"><span>Temperature increase since 1970:</span><span class="legend-value">' +
+          '<div class="legend-item" style="background:#EE442F"><span>Temperature Increase:</span><span class="legend-value">' +
           (globalData ? globalData.temperature.toFixed(2) : "N/A") +
-          "°C</span></div>";
+          " °C</span></div>";
 
         if (selectedContinent) {
           const ct = calculateContinentTrend(selectedContinent);
@@ -1209,7 +1233,7 @@
             selectedContinent +
             ' (Selected) Emissions:</span><span class="legend-value">' +
             (cd ? cd.emissions.toLocaleString() : "N/A") +
-            " Mt</span></div>";
+            " MtCO₂eq</span></div>";
         }
 
         legendContainer.innerHTML = html;
@@ -1219,7 +1243,18 @@
         const cd = allData.find(
           (d) => d.iso_code === selectedCountry && d.year === currentYear
         );
-        if (!cd) return;
+        console.log(JSON.stringify(cd));
+        if (!cd) {
+          console.log('Country data not found:', {
+            selectedCountry,
+            currentYear,
+            availableYears: allData
+              .filter(d => d.iso_code === selectedCountry)
+              .map(d => d.year)
+              .sort((a, b) => a - b)
+          });
+          return;
+        }
         const cs = {};
         sectorData
           .filter(
@@ -1240,16 +1275,16 @@
         document.getElementById("countryDetails").innerHTML = `
         <div class="country-details card">
           <div class="country-header-section">
-            <div class="country-title-section"><h2>${cd.Name}</h2><p>${
+            <div class="country-title-section"><h2>${cd.country}</h2><p>${
           cd.continent
         }</p></div>
             <button class="close-btn" onclick="clearCountrySelection()">Close</button>
           </div>
           <div class="metrics">
-            <div class="metric-card blue" style="background:#63ACBE ; color: white "><div class="metric-label" style="color:white">Total Emissions</div><div class="metric-value"style="color:white">${cd.emissions.toLocaleString()}</div><div class="metric-unit", style="color:white">MtCO₂e</div></div>
-            <div class="metric-card red" style="background:#EE442F; color: white" ><div class="metric-label" style="color:white">Per Capita</div><div class="metric-value" style="color:white">${Math.round(
+            <div class="metric-card blue" style="background:#63ACBE ; color: white "><div class="metric-label" style="color:white">Greenhouse Gas Emissions Total</div><div class="metric-value"style="color:white">${cd.emissions.toLocaleString()}</div><div class="metric-unit", style="color:white">MtCO₂eq</div></div>
+            <div class="metric-card red" style="background:#EE442F; color: white" ><div class="metric-label" style="color:white">Greenhouse Gas Emissions per Capita</div><div class="metric-value" style="color:white">${Math.round(
               cd.emissions_per_capita * 1_000_000
-            ).toLocaleString()}</div><div class="metric-unit", style="color:white">TCO₂</div></div>
+            ).toLocaleString()}</div><div class="metric-unit", style="color:white">tCO₂eq</div></div>
             <div class="metric-card purple" style="background:#601A4A; color: white"><div class="metric-label" style="color:white">Percentile</div><div class="metric-value" style="color:white">${cd.emissions_percentile.toFixed(
               1
             )}</div><div class="metric-unit", style="color:white">%</div></div>
@@ -1258,16 +1293,16 @@
           <div class="detail-charts">
             <div>
               <div class="card-header" style="margin-top:0;"> ${
-                cd.Name
-              } Emissions per Capita, compared to G7-countries and ${
+                cd.country
+              }'s Total Emissions: Compared to G7 Countries and ${
           cd.continent
         } Extremes</div>
-              <div id="comparisonChart" style="width:100%; height:520px;"></div>
+              <div id="comparisonChart" style="width:100%; height:580px;"></div>
             </div>
             <div>
-              <div class="card-header" style="margin-top:0;">Sector Comparison in ${
-                cd.continent
-              } Over Time  </div>
+              <div class="card-header" style="margin-top:0;">Greenhouse Gas Emissions per Sector: ${
+                cd.country
+              } compared to ${cd.continent}</div>
               <div class="sector-select-row">
                 <label for="sectorSelect">Sector:</label>
                 <select id="sectorSelect"></select>
@@ -1275,8 +1310,8 @@
               <div id="sectorChart" style="width:100%; height:520px;"></div>
             </div>
           </div>
-          <div class="card-header" style="margin-top:20px;">Sector Contributions in ${
-            cd.Name
+          <div class="card-header" style="margin-top:20px;">Greenhouse Gas Emissions per Sector ${
+            cd.country
           }</div>
           <div id="sectorStackChart" style="width:100%; height:420px;"></div>
         </div>`;
@@ -1305,12 +1340,8 @@
         renderSectorStackChart(selectedCountry, defaultSector);
         sel.addEventListener("change", (e) => {
           renderSectorCandlestick(selectedCountry, e.target.value);
-        });
-        sel.addEventListener("change", (e) => {
           renderSectorStackChart(selectedCountry, e.target.value);
         });
-        // render stacked chart after selectors are ready
-        renderSectorStackChart(selectedCountry);
       }
 
       // ------- Sector candlestick helpers -------
@@ -1385,6 +1416,7 @@
         let globalMax = 0;
         let globalMin = Infinity;
         const yearCats = dist.years.map((y) => String(y));
+        
         dist.years.forEach((y) => {
           const vals = dist.valuesByYear[y] || [];
           if (vals.length) {
@@ -1405,8 +1437,21 @@
             showlegend: false,
           });
         });
+        
         if (!Number.isFinite(globalMin) || globalMin <= 0) globalMin = 1e-6;
-        // removed global mean line as requested
+        
+        // Include country series values in min/max calculation
+        countrySeries.y.forEach((v) => {
+          if (Number.isFinite(v) && v > 0) {
+            globalMax = Math.max(globalMax, v);
+            globalMin = Math.min(globalMin, v);
+          }
+        });
+        
+        // Calculate range with padding for log scale
+        const yMin = globalMin * 0.3;
+        const yMax = globalMax * 3;
+        
         traces.push({
           type: "scatter",
           mode: "lines+markers",
@@ -1415,19 +1460,21 @@
           connectgaps: true,
           line: { color: "#dc2626", width: 3 },
           marker: { size: 4, color: "#dc2626" },
-          name: "Selected country",
-          hovertemplate: "%{x}: %{y:.4f} TCO₂e per capita<extra></extra>",
+          name: "Selected Country",
+          hovertemplate: "%{x}: %{y:.4f} tCO₂eq per Capita<extra></extra>",
         });
+        
         traces.push({
           type: "scatter",
           mode: "lines",
           x: [String(currentYear), String(currentYear)],
-          y: [globalMin * 0.9, globalMax * 0.95],
+          y: [yMin * 1000000, yMax * 1000000],
           line: { color: "#dc2626", width: 2, dash: "dash" },
           name: "Selected Year",
           hoverinfo: "skip",
           showlegend: false,
         });
+        
         const layout = {
           margin: { l: 60, r: 20, t: 10, b: 40 },
           paper_bgcolor: "rgba(0,0,0,0)",
@@ -1440,10 +1487,11 @@
             categoryorder: "category ascending",
           },
           yaxis: {
-            title: "Sector emissions per capita (TCO₂e per capita)",
+            title: "Sector Greenhouse Gas Emissions per Capita (tCO₂eq)",
             showgrid: true,
             gridcolor: "#eef2f7",
             type: "log",
+            range: [Math.log10(yMin * 1000000), Math.log10(yMax * 1000000)], // Explicitly set range in log space
           },
           boxmode: "overlay",
           boxgap: 0.35,
@@ -1457,6 +1505,7 @@
             font: { size: 10 },
           },
         };
+        
         Plotly.newPlot("sectorChart", traces, layout, {
           responsive: true,
           displayModeBar: false,
@@ -1466,30 +1515,26 @@
       function updateSectorChartMarker() {
         const el = document.getElementById("sectorChart");
         if (!el || !el.data || el.data.length < 3) return;
-        // compute min>0 and max from all box traces (for log scale)
-        let maxY = 0;
-        let minY = Infinity;
-        el.data.forEach((tr) => {
-          if (tr.type === "box" && Array.isArray(tr.y)) {
-            const localMax = Math.max(...tr.y);
-            const localMin = Math.min(...tr.y);
-            if (Number.isFinite(localMax)) maxY = Math.max(maxY, localMax);
-            if (Number.isFinite(localMin)) minY = Math.min(minY, localMin);
-          }
-        });
-        if (!Number.isFinite(minY) || minY <= 0) minY = 1e-6;
+        
+        // Get the y-axis range from layout (in log space)
+        const yAxisRange = el.layout.yaxis.range;
+        if (!yAxisRange) return;
+        
+        // Convert from log space back to linear space
+        const minY = Math.pow(10, yAxisRange[0]);
+        const maxY = Math.pow(10, yAxisRange[1]);
+        
         const ti = el.data.length - 1; // marker is last trace
         Plotly.update(
           "sectorChart",
           {
             x: [[String(currentYear), String(currentYear)]],
-            y: [[minY * 0.9, maxY * 0.95]],
+            y: [[minY, maxY]],
           },
           {},
           [ti]
         );
       }
-
       // ------- Continent & BRICS comparison chart -------
       const G7 = new Set(["CAN", "FRA", "DEU", "ITA", "JPN", "GBR", "USA"]);
 
@@ -1594,18 +1639,19 @@
         traces.push({
           type: "scatter",
           mode: "lines+markers",
-          name: "Selected country",
+          name: "Selected Country",
           x: xCats,
           y: countrySeries.y,
           connectgaps: true,
           line: { color: "#EE442F", width: 2.5 },
           marker: { size: 4, color: "#dc2626" },
-          hovertemplate: "%{x}: %{y:.4f} gCO₂e per capita<extra></extra>",
+          hovertemplate: "%{x}: %{y:.4f} tCO₂eq per Capita<extra></extra>",
         });
 
-        // Vertical marker
-        let minY = Infinity,
-          maxY = 0;
+        // Calculate min/max for the range
+        let globalMax = 0;
+        let globalMin = Infinity;
+
         [
           continentBand.minVals,
           continentBand.maxVals,
@@ -1614,18 +1660,25 @@
           countrySeries.y,
         ].forEach((arr) => {
           arr.forEach((v) => {
-            if (Number.isFinite(v)) {
-              minY = Math.min(minY, v);
-              maxY = Math.max(maxY, v);
+            if (Number.isFinite(v) && v > 0) {
+              globalMax = Math.max(globalMax, v);
+              globalMin = Math.min(globalMin, v);
             }
           });
         });
-        if (!Number.isFinite(minY) || minY <= 0) minY = 1e-6;
+
+        if (!Number.isFinite(globalMin) || globalMin <= 0) globalMin = 1e-6;
+
+        // Padding für Log-Skala (gleich wie Candlestick)
+        const yMin = globalMin * 0.3;
+        const yMax = globalMax * 3;
+
+        // Vertical marker
         traces.push({
           type: "scatter",
           mode: "lines",
           x: [String(currentYear), String(currentYear)],
-          y: [minY * 0.9, maxY * 0.95],
+          y: [yMin, yMax],
           line: { color: "#dc2626", width: 2, dash: "dash" },
           name: "Selected Year",
           hoverinfo: "skip",
@@ -1644,10 +1697,13 @@
             categoryorder: "category ascending",
           },
           yaxis: {
-            title: "Per capita emissions (TCO₂e per capita)",
+            title: "Greenhouse Gas Emissions per Capita (tCO₂eq)",
             showgrid: true,
             gridcolor: "#eef2f7",
             type: "log",
+            range: [Math.log10(yMin), Math.log10(yMax)],
+            tickmode: "linear",
+            dtick: Math.log10(2),
           },
           showlegend: true,
           legend: {
@@ -1667,25 +1723,21 @@
       function updateComparisonChartMarker() {
         const el = document.getElementById("comparisonChart");
         if (!el || !el.data || el.data.length < 5) return;
-        let minY = Infinity,
-          maxY = 0;
-        el.data.forEach((tr) => {
-          if (Array.isArray(tr.y)) {
-            tr.y.forEach((v) => {
-              if (Number.isFinite(v)) {
-                minY = Math.min(minY, v);
-                maxY = Math.max(maxY, v);
-              }
-            });
-          }
-        });
-        if (!Number.isFinite(minY) || minY <= 0) minY = 1e-6;
+        
+        // Get the y-axis range from layout (in log space)
+        const yAxisRange = el.layout.yaxis.range;
+        if (!yAxisRange) return;
+        
+        // Convert from log space back to linear space
+        const minY = Math.pow(10, yAxisRange[0]);
+        const maxY = Math.pow(10, yAxisRange[1]);
+        
         const ti = el.data.length - 1; // marker last
         Plotly.update(
           "comparisonChart",
           {
             x: [[String(currentYear), String(currentYear)]],
-            y: [[minY * 0.9, maxY * 0.95]],
+            y: [[minY, maxY]],
           },
           {},
           [ti]
@@ -1706,10 +1758,20 @@
         sectorNames.forEach((s) => {
           bySector[s] = new Array(years.length).fill(0);
         });
+        
+        // Convert to per capita by dividing by population
         rows.forEach((r) => {
           const idx = years.indexOf(r.year);
-          if (idx !== -1) bySector[r.sector][idx] += Number(r.emissions) || 0;
+          if (idx !== -1) {
+            const key = r.iso_code + "_" + r.year;
+            const pop = populationByKey[key];
+            if (pop && pop > 0) {
+              // Emissions per capita in tons (multiply by 1000 to get tons instead of kilotons)
+              bySector[r.sector][idx] += (Number(r.emissions) / pop) * 1_000_000 || 0;
+            }
+          }
         });
+        
         const totals = years.map((_, i) =>
           sectorNames.reduce((sum, s) => sum + (bySector[s][i] || 0), 0)
         );
@@ -1720,15 +1782,16 @@
         const ts = buildCountrySectorTimeSeries(iso);
         const xCats = ts.years.map((y) => String(y));
         const palette = [
-          "#EE442F",
-          "#F58231",
-          "#FFE119",
-          "#2E7D32",
-          "#4363D8",
-          "#601A4A",
-          "#63ACBE",
-          "#dbcada",
+          "#601AFA", //burgundy
+          "#AB469E", //purple
+          "#EE442F", //red
+          "#B0ADFF", //lavender
+          "#63ACBE", //teal
+          "#BBD686", //green
+          "#888888", //grey
+          "#755133", //brown
         ];
+
 
         // Build traces with non-highlighted first, highlighted last for visual prominence
         const traces = [];
@@ -1736,7 +1799,7 @@
           const isHi = highlightedSector && s === highlightedSector;
           const base = palette[idx % palette.length];
           const lineW = isHi ? 2.5 : 1;
-          const alpha = isHi ? "CC" : "40"; // stronger fill for highlighted
+          const alpha = isHi ? "CC" : "5"; // stronger fill for highlighted
           traces.push({
             type: "scatter",
             mode: "lines",
@@ -1746,15 +1809,19 @@
             y: ts.bySector[s],
             line: { width: lineW, color: base },
             fillcolor: base + alpha,
-            hovertemplate: "%{x}: %{y:.2f} Mt<extra>" + s + "</extra>",
+            hovertemplate: "%{x}: %{y:.4f} tCO₂eq per Capita<extra>" + s + "</extra>",
           });
         });
+        
         let maxY = Math.max(...ts.totals, 0);
+        // Add padding for the range
+        const yMax = maxY * 1.05;
+        
         traces.push({
           type: "scatter",
           mode: "lines",
           x: [String(currentYear), String(currentYear)],
-          y: [0, maxY * 0.95],
+          y: [0, yMax],
           line: { color: "#dc2626", width: 2, dash: "dash" },
           name: "Selected Year",
           hoverinfo: "skip",
@@ -1762,10 +1829,14 @@
         });
 
         // Build direct labels on the right using annotations at mid-band positions
+        // Build direct labels on the right using annotations with excentric positioning to avoid overlap
         const lastIdx = ts.years.length ? ts.years.length - 1 : -1;
         const annotations = [];
         if (lastIdx >= 0) {
           let cumulative = 0;
+          const positions = []; // Store {y: actualY, label: ..., ...}
+          
+          // First pass: collect all label positions
           ts.sectorNames.forEach((s, idx) => {
             const base = palette[idx % palette.length];
             const val = Number(ts.bySector[s][lastIdx]) || 0;
@@ -1773,22 +1844,66 @@
             cumulative += val;
             if (val > 0) {
               const isHi = highlightedSector && s === highlightedSector;
+              positions.push({
+                y: mid,
+                sector: s,
+                color: base,
+                isHighlighted: isHi,
+                value: val
+              });
+            }
+          });
+          
+          // Second pass: adjust positions to avoid overlap
+          const minSpacing = maxY * 0.04; // Minimum spacing between labels (4% of chart height)
+          for (let i = 1; i < positions.length; i++) {
+            if (positions[i].y - positions[i-1].y < minSpacing) {
+              positions[i].y = positions[i-1].y + minSpacing;
+            }
+          }
+          
+          // Third pass: create annotations with leader lines
+          let cumulative2 = 0;
+          ts.sectorNames.forEach((s, idx) => {
+            const val = Number(ts.bySector[s][lastIdx]) || 0;
+            const mid = cumulative2 + val / 2;
+            cumulative2 += val;
+            
+            const pos = positions.find(p => p.sector === s);
+            if (pos) {
+              // Always add leader line
               annotations.push({
                 xref: "paper",
                 yref: "y",
-                x: 1.01,
+                x: 1.005,
                 y: mid,
-                text: isHi ? "<b>" + s + "</b>" : s,
-                font: { color: base, size: 11, family: "inherit" },
+                ax: 1.03,
+                ay: pos.y,
+                axref: "paper",
+                ayref: "y",
+                showarrow: true,
+                arrowhead: 0,
+                arrowwidth: 1,
+                arrowcolor: pos.color,
+                opacity: 0.6
+              });
+              
+              // Add label
+              annotations.push({
+                xref: "paper",
+                yref: "y",
+                x: 1.04,
+                y: pos.y,
+                text: pos.isHighlighted ? "<b>" + s + "</b>" : s,
                 showarrow: false,
                 xanchor: "left",
                 yanchor: "middle",
                 align: "left",
                 font: {
-                  color: base,
+                  color: pos.color,
                   size: 11,
                   family: "inherit",
-                  weight: isHi ? "bold" : "normal",
+                  weight: pos.isHighlighted ? "bold" : "normal",
                 },
                 cliponaxis: false,
               });
@@ -1808,9 +1923,10 @@
             categoryorder: "category ascending",
           },
           yaxis: {
-            title: "Emissions (MtCO₂e)",
+            title: "Greenhouse Gas Emissions per Capita (tCO₂eq)",
             showgrid: true,
             gridcolor: "#eef2f7",
+            range: [0, yMax], // Explicitly set range
           },
           showlegend: false,
           annotations,
@@ -1818,25 +1934,37 @@
         Plotly.newPlot("sectorStackChart", traces, layout, {
           responsive: true,
           displayModeBar: false,
+        }).then((gd) => {
+          gd.on("plotly_click", function (data) {
+            const iso = data.points[0].location;
+
+            if (selectedCountry === iso) {
+              clearCountrySelection();
+              removeMapHighlight();
+              return;
+            }
+
+            selectCountry(iso);
+          });
         });
       }
 
       function updateSectorStackMarker() {
         const el = document.getElementById("sectorStackChart");
         if (!el || !el.data || el.data.length < 2) return;
-        let maxY = 0;
-        el.data.forEach((tr, i) => {
-          if (i < el.data.length - 1 && Array.isArray(tr.y))
-            tr.y.forEach((v) => {
-              if (Number.isFinite(v)) maxY = Math.max(maxY, v);
-            });
-        });
+        
+        // Get the y-axis range from layout
+        const yAxisRange = el.layout.yaxis.range;
+        if (!yAxisRange) return;
+        
+        const maxY = yAxisRange[1];
+        
         const ti = el.data.length - 1;
         Plotly.update(
           "sectorStackChart",
           {
             x: [[String(currentYear), String(currentYear)]],
-            y: [[0, maxY * 0.95]],
+            y: [[0, maxY]],
           },
           {},
           [ti]
