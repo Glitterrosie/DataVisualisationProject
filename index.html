@@ -46,12 +46,12 @@
       }
       .info-box {
         background: #f0f9ff;
-        border-left: 4px solid #63ACBE;
+        border-left: 4px solid #63acbe;
         padding: 20px 25px;
       }
       .info-box p {
         color: #1e293b;
-        font-size: 1.0em;
+        font-size: 1em;
         line-height: 1.6;
         margin: 0;
       }
@@ -67,7 +67,8 @@
         font-weight: 600;
         color: black;
         margin-bottom: 20px;
-        padding-bottom: 1px;
+        padding-top: 5px;
+        padding-bottom: 15px;
         border-bottom: 2px solid #f1f5f9;
       }
 
@@ -284,7 +285,7 @@
         color: #1e293b;
       }
       .metric-unit {
-        font-size: 1.0em;
+        font-size: 1em;
         color: #64748b;
         font-weight: 600;
       }
@@ -388,7 +389,7 @@
         box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);
       }
       #sectorSelect option {
-        font-size: 2.0rem;  /* ← NEU HINZUFÜGEN */
+        font-size: 2rem; /* ← NEU HINZUFÜGEN */
         padding: 8px;
       }
       /* The card itself */
@@ -396,7 +397,6 @@
         padding: 0 !important;
         display: flex;
         flex-direction: column;
-        overflow: hidden; /* ⬅ prevents content from escaping */
       }
 
       /* Header stays fixed */
@@ -410,18 +410,18 @@
       .world-map-container {
         flex: 1 1 auto;
         width: 100%;
-        max-height: 550px; /* ⬅ LIMIT total map height */
+        max-height: auto;
         display: flex;
         justify-content: center;
         align-items: center;
-        overflow: hidden; /* ⬅ crop anything exceeding */
+        overflow: visible;
         position: relative;
       }
 
       /* The Plotly map itself */
       #worldMap {
-        width: 100% !important;
-        height: 100% !important;
+        /* width: 100% !important;
+        height: 100% !important; */
 
         max-width: 1100px; /* ⬅ control map width size */
         max-height: 520px; /* ⬅ control map height size */
@@ -445,10 +445,17 @@
       </div>
       <div class="card info-box">
         <p>
-          This dashboard provides insights into <b>global greenhouse gas emissions data</b>. How are global emissions evolving and how far are we to reach the <b>Paris Climate Goals</b>? 
-          Explore emissions trends, compare countries and regions, and analyze sector-specific contributions. Use the <b>year slider</b> to navigate through different time periods and <b>click on countries</b> to see detailed breakdowns.
-          <br><br>
-          The unit used is <b>MtCO₂eq</b> (or respectively <b>tCO₂eq</b>), which are CO₂ equivalent emissions, a standard unit to measure greenhouse gas emissions by converting different gases into the equivalent amount of CO₂ based on their global warming potential.
+          This dashboard provides insights into
+          <b>global greenhouse gas emissions data</b>. How are global emissions
+          evolving and how far are we to reach the <b>Paris Climate Goals</b>?
+          Explore emissions trends, compare countries and regions, and analyze
+          sector-specific contributions. Use the <b>year slider</b> to navigate
+          through different time periods and <b>click on countries</b> to see
+          detailed breakdowns. <br /><br />
+          The unit used is <b>MtCO₂eq</b> (or respectively <b>tCO₂eq</b>), which
+          are CO₂ equivalent emissions, a standard unit to measure greenhouse
+          gas emissions by converting different gases into the equivalent amount
+          of CO₂ based on their global warming potential.
         </p>
       </div>
       <div id="loading" class="card" style="text-align: center; padding: 60px">
@@ -461,7 +468,9 @@
       <div id="mainContent" style="display: none">
         <div class="main-grid">
           <div class="card chart-section">
-            <div class="card-header">Global Greenhouse Gas Emissions Development</div>
+            <div class="card-header">
+              Global Greenhouse Gas Emissions Development
+            </div>
 
             <!-- new wrapper to align chart & slider -->
             <div class="chart-wrapper">
@@ -491,10 +500,8 @@
               <div id="worldMap"></div>
             </div>
             <!-- Textfeld NACH world-map-container, aber INNERHALB von world-card -->
-            <div class="info-box" style="margin-top: 15px;">
-              <p>
-                Click on a Country to get more Details!
-              </p>
+            <div class="info-box" style="margin-top: 15px">
+              <p>Click on a Country to get more Details!</p>
             </div>
           </div>
         </div>
@@ -509,7 +516,6 @@
         selectedContinent = null,
         currentYear = 2023,
         yearRange = { min: 1990, max: 2023 };
-
 
       const tempByYear = {};
       const populationByKey = {};
@@ -542,7 +548,6 @@
         globalBinPositions = globalThresholds.map((_, i) => i / (nBins - 1));
       }
 
-
       async function init() {
         try {
           const mainResponse = await fetch(
@@ -561,7 +566,7 @@
             dynamicTyping: true,
             skipEmptyLines: true,
           }).data;
-          console.log('Headers:', Object.keys(allData[0]));
+          console.log("Headers:", Object.keys(allData[0]));
           sectorData = Papa.parse(await sectorResponse.text(), {
             header: true,
             dynamicTyping: true,
@@ -573,7 +578,7 @@
             skipEmptyLines: true,
           }).data; // NEW
 
-           allData = allData.filter(
+          allData = allData.filter(
             (row) =>
               row.year &&
               row.iso_code &&
@@ -583,8 +588,8 @@
 
           // Replace empty/missing continents with "Undefined"
           allData.forEach((row) => {
-            if (!row.continent || row.continent.trim() === '') {
-              row.continent = 'Undefined';
+            if (!row.continent || row.continent.trim() === "") {
+              row.continent = "Undefined";
             }
           });
 
@@ -869,9 +874,9 @@
         milestones.forEach((m) => {
           layout.annotations.push({
             x: m.year,
-            xref: 'x',
+            xref: "x",
             y: 0, // Changed: position at the very bottom
-            yref: 'y',
+            yref: "y",
             text: m.label,
             textangle: -90,
             showarrow: false,
@@ -890,8 +895,6 @@
           displayModeBar: false,
         });
       }
-
-
 
       let originalMapZ = []; // global variable
       // // Convert TCO₂e → gCO₂e and assign a 0–11 bin
@@ -942,17 +945,17 @@
       const BIN_EDGES = [0, 2, 5, 8, 12, 16, 20, 25, 30, 40, 60, 100];
 
       const BIN_COLORS = [
-        "#fff5f5", // 0–2
-        "#fee0e0", // 2–5
-        "#fcbaba", // 5–8
-        "#fa8f8f", // 8–12
-        "#f66969", // 12–16
-        "#ef4444", // 16–20
-        "#dc2626", // 20–25
-        "#b91c1c", // 25–30
-        "#8a1313", // 30–40
-        "#5c0b0b", // 40–60
-        "#380606", // 60–100 (darkest)
+        "#FDE9E6", // 0–2      very light tint
+        "#F9C5BE", // 2–5
+        "#F5A197", // 5–8
+        "#F17C70", // 8–12
+        "#ED5B4C", // 12–16
+        "#EE442F", // 16–20   base dashboard red
+        "#D63C2A", // 20–25
+        "#B73225", // 25–30
+        "#8F281E", // 30–40
+        "#661F17", // 40–60
+        "#3E140F", // 60–100  darkest shade
       ];
 
       const COLOR_CMIN = 0;
@@ -1125,11 +1128,11 @@
         const gt = calculateGlobalTrend();
         const maxE = Math.max(...gt.map((d) => d.emissions));
         const chartMax = Math.ceil(maxE / 10) * 10; // Use consistent max value
-        
+
         const ti = selectedContinent
           ? document.getElementById("lineChart").data.length - 2
           : document.getElementById("lineChart").data.length - 1;
-        
+
         Plotly.update(
           "lineChart",
           { x: [[currentYear, currentYear]], y: [[0, chartMax]] }, // Changed to full height
@@ -1195,9 +1198,9 @@
 
       function selectCountry(iso) {
         selectedCountry = iso;
-        
+
         // Find continent from the data
-        const countryData = allData.find(d => d.iso_code === iso);
+        const countryData = allData.find((d) => d.iso_code === iso);
         selectedContinent = countryData ? countryData.continent : null;
 
         updateMapHighlight(iso); // <-- highlight the selected country
@@ -1245,13 +1248,13 @@
         );
         console.log(JSON.stringify(cd));
         if (!cd) {
-          console.log('Country data not found:', {
+          console.log("Country data not found:", {
             selectedCountry,
             currentYear,
             availableYears: allData
-              .filter(d => d.iso_code === selectedCountry)
-              .map(d => d.year)
-              .sort((a, b) => a - b)
+              .filter((d) => d.iso_code === selectedCountry)
+              .map((d) => d.year)
+              .sort((a, b) => a - b),
           });
           return;
         }
@@ -1416,7 +1419,7 @@
         let globalMax = 0;
         let globalMin = Infinity;
         const yearCats = dist.years.map((y) => String(y));
-        
+
         dist.years.forEach((y) => {
           const vals = dist.valuesByYear[y] || [];
           if (vals.length) {
@@ -1437,9 +1440,9 @@
             showlegend: false,
           });
         });
-        
+
         if (!Number.isFinite(globalMin) || globalMin <= 0) globalMin = 1e-6;
-        
+
         // Include country series values in min/max calculation
         countrySeries.y.forEach((v) => {
           if (Number.isFinite(v) && v > 0) {
@@ -1447,11 +1450,11 @@
             globalMin = Math.min(globalMin, v);
           }
         });
-        
+
         // Calculate range with padding for log scale
         const yMin = globalMin * 0.3;
         const yMax = globalMax * 3;
-        
+
         traces.push({
           type: "scatter",
           mode: "lines+markers",
@@ -1463,7 +1466,7 @@
           name: "Selected Country",
           hovertemplate: "%{x}: %{y:.4f} tCO₂eq per Capita<extra></extra>",
         });
-        
+
         traces.push({
           type: "scatter",
           mode: "lines",
@@ -1474,7 +1477,7 @@
           hoverinfo: "skip",
           showlegend: false,
         });
-        
+
         const layout = {
           margin: { l: 60, r: 20, t: 10, b: 40 },
           paper_bgcolor: "rgba(0,0,0,0)",
@@ -1505,7 +1508,7 @@
             font: { size: 10 },
           },
         };
-        
+
         Plotly.newPlot("sectorChart", traces, layout, {
           responsive: true,
           displayModeBar: false,
@@ -1515,15 +1518,15 @@
       function updateSectorChartMarker() {
         const el = document.getElementById("sectorChart");
         if (!el || !el.data || el.data.length < 3) return;
-        
+
         // Get the y-axis range from layout (in log space)
         const yAxisRange = el.layout.yaxis.range;
         if (!yAxisRange) return;
-        
+
         // Convert from log space back to linear space
         const minY = Math.pow(10, yAxisRange[0]);
         const maxY = Math.pow(10, yAxisRange[1]);
-        
+
         const ti = el.data.length - 1; // marker is last trace
         Plotly.update(
           "sectorChart",
@@ -1723,15 +1726,15 @@
       function updateComparisonChartMarker() {
         const el = document.getElementById("comparisonChart");
         if (!el || !el.data || el.data.length < 5) return;
-        
+
         // Get the y-axis range from layout (in log space)
         const yAxisRange = el.layout.yaxis.range;
         if (!yAxisRange) return;
-        
+
         // Convert from log space back to linear space
         const minY = Math.pow(10, yAxisRange[0]);
         const maxY = Math.pow(10, yAxisRange[1]);
-        
+
         const ti = el.data.length - 1; // marker last
         Plotly.update(
           "comparisonChart",
@@ -1758,7 +1761,7 @@
         sectorNames.forEach((s) => {
           bySector[s] = new Array(years.length).fill(0);
         });
-        
+
         // Convert to per capita by dividing by population
         rows.forEach((r) => {
           const idx = years.indexOf(r.year);
@@ -1767,11 +1770,12 @@
             const pop = populationByKey[key];
             if (pop && pop > 0) {
               // Emissions per capita in tons (multiply by 1000 to get tons instead of kilotons)
-              bySector[r.sector][idx] += (Number(r.emissions) / pop) * 1_000_000 || 0;
+              bySector[r.sector][idx] +=
+                (Number(r.emissions) / pop) * 1_000_000 || 0;
             }
           }
         });
-        
+
         const totals = years.map((_, i) =>
           sectorNames.reduce((sum, s) => sum + (bySector[s][i] || 0), 0)
         );
@@ -1792,7 +1796,6 @@
           "#755133", //brown
         ];
 
-
         // Build traces with non-highlighted first, highlighted last for visual prominence
         const traces = [];
         ts.sectorNames.forEach((s, idx) => {
@@ -1809,14 +1812,15 @@
             y: ts.bySector[s],
             line: { width: lineW, color: base },
             fillcolor: base + alpha,
-            hovertemplate: "%{x}: %{y:.4f} tCO₂eq per Capita<extra>" + s + "</extra>",
+            hovertemplate:
+              "%{x}: %{y:.4f} tCO₂eq per Capita<extra>" + s + "</extra>",
           });
         });
-        
+
         let maxY = Math.max(...ts.totals, 0);
         // Add padding for the range
         const yMax = maxY * 1.05;
-        
+
         traces.push({
           type: "scatter",
           mode: "lines",
@@ -1835,7 +1839,7 @@
         if (lastIdx >= 0) {
           let cumulative = 0;
           const positions = []; // Store {y: actualY, label: ..., ...}
-          
+
           // First pass: collect all label positions
           ts.sectorNames.forEach((s, idx) => {
             const base = palette[idx % palette.length];
@@ -1849,27 +1853,27 @@
                 sector: s,
                 color: base,
                 isHighlighted: isHi,
-                value: val
+                value: val,
               });
             }
           });
-          
+
           // Second pass: adjust positions to avoid overlap
           const minSpacing = maxY * 0.04; // Minimum spacing between labels (4% of chart height)
           for (let i = 1; i < positions.length; i++) {
-            if (positions[i].y - positions[i-1].y < minSpacing) {
-              positions[i].y = positions[i-1].y + minSpacing;
+            if (positions[i].y - positions[i - 1].y < minSpacing) {
+              positions[i].y = positions[i - 1].y + minSpacing;
             }
           }
-          
+
           // Third pass: create annotations with leader lines
           let cumulative2 = 0;
           ts.sectorNames.forEach((s, idx) => {
             const val = Number(ts.bySector[s][lastIdx]) || 0;
             const mid = cumulative2 + val / 2;
             cumulative2 += val;
-            
-            const pos = positions.find(p => p.sector === s);
+
+            const pos = positions.find((p) => p.sector === s);
             if (pos) {
               // Always add leader line
               annotations.push({
@@ -1885,9 +1889,9 @@
                 arrowhead: 0,
                 arrowwidth: 1,
                 arrowcolor: pos.color,
-                opacity: 0.6
+                opacity: 0.6,
               });
-              
+
               // Add label
               annotations.push({
                 xref: "paper",
@@ -1952,13 +1956,13 @@
       function updateSectorStackMarker() {
         const el = document.getElementById("sectorStackChart");
         if (!el || !el.data || el.data.length < 2) return;
-        
+
         // Get the y-axis range from layout
         const yAxisRange = el.layout.yaxis.range;
         if (!yAxisRange) return;
-        
+
         const maxY = yAxisRange[1];
-        
+
         const ti = el.data.length - 1;
         Plotly.update(
           "sectorStackChart",
