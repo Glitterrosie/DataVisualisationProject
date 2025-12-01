@@ -429,14 +429,6 @@
         max-height: 520px; /* ⬅ control map height size */
         margin: auto;
       }
-
-      /* Force Plotly’s internal containers to scale */
-      #worldMap .plot-container,
-      #worldMap .svg-container,
-      #worldMap .main-svg {
-        width: 100% !important;
-        height: 100% !important;
-      }
     </style>
   </head>
   <body>
@@ -1026,7 +1018,7 @@
         BHR: { lon: 52.55, lat: 26.07, label: "Bahrain" },
 
         // Oceania
-        FJI: { lon: 178.07, lat: -17.71, label: "Fiji" }, // not tiny but often invisible
+        FJI: { lon: 178.07, lat: -17.71, label: "Fiji" },
         TLS: { lon: 125.57, lat: -8.53, label: "Timor-Leste" },
 
         // Rare but sometimes included
@@ -1192,9 +1184,8 @@
         };
 
         let traces = [];
-
-        if (tinyTrace) traces.push(tinyTrace); // put tiny dots FIRST (bottom layer)
-        traces.push(trace); // put choropleth LAST (top layer)
+        traces.push(trace); // choropleth FIRST
+        if (tinyTrace) traces.push(tinyTrace); // tiny points second (top)
 
         Plotly.newPlot("worldMap", traces, layout, {
           responsive: true,
