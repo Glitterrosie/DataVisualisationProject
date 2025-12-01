@@ -467,7 +467,7 @@
         </p>
       </div>
 
-      <div id="mainContent" style="display: none">
+      <div id="mainContent" style="opacity: 0; pointer-events: none">
         <div class="main-grid">
           <div class="card chart-section">
             <div class="card-header">
@@ -645,7 +645,16 @@
           createWorldMap();
 
           document.getElementById("loading").style.display = "none";
-          document.getElementById("mainContent").style.display = "block";
+          // show content smoothly
+          const mc = document.getElementById("mainContent");
+          mc.style.opacity = "1";
+          mc.style.pointerEvents = "auto";
+
+          // FORCE proper Plotly sizing after reveal
+          setTimeout(() => {
+            Plotly.Plots.resize(document.getElementById("lineChart"));
+            Plotly.Plots.resize(document.getElementById("worldMap"));
+          }, 80);
         } catch (error) {
           document.getElementById("loading").innerHTML =
             '<div style="color:#dc2626; padding:30px;"><h3>Error Loading Data</h3><p>' +
