@@ -7,6 +7,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
+      html {
+        font-size: 14px; /* shrink entire dashboard safely */
+      }
+
+      @media (min-width: 1500px) {
+        html {
+          font-size: 13px; /* even smaller on large monitors */
+        }
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -1175,6 +1185,7 @@
                 text: "Emissions per Capita (tCO₂eq)",
                 side: "bottom",
                 font: { size: 11 },
+                standoff: 18,
               },
             },
           },
