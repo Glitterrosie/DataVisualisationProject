@@ -97,6 +97,8 @@
         margin-top: 20px;
         padding: 0 40px;
         overflow-x: auto;
+        min-height: 110px; /* FIX: prevents collapse on first render */
+        overflow: hidden;
       }
 
       .legend-item {
@@ -519,6 +521,10 @@
 
       const tempByYear = {};
       const populationByKey = {};
+      function isChartReady(id) {
+        const el = document.getElementById(id);
+        return el && el.data && el.data.length > 0;
+      }
 
       // ==============================
       // GLOBAL STATIC PERCENTILE BINS
@@ -631,6 +637,11 @@
 
           setupSlider();
           createLineChart();
+          setTimeout(() => {
+            if (isChartReady("lineChart")) {
+              updateLegend();
+            }
+          }, 50);
           createWorldMap();
 
           document.getElementById("loading").style.display = "none";
@@ -665,14 +676,19 @@
         slider.addEventListener("input", (e) => {
           currentYear = parseInt(e.target.value);
           document.getElementById("currentYear").textContent = currentYear;
+
           updateWorldMap();
-          updateLineChartMarker();
-          updateLegend();
+
+          if (isChartReady("lineChart")) {
+            updateLineChartMarker();
+            setTimeout(updateLegend, 20);
+          }
+
           if (selectedCountry) updateCountryDetails();
-          // update sector chart year marker if visible without rebuilding
-          updateSectorChartMarker();
-          updateComparisonChartMarker();
-          updateSectorStackMarker();
+
+          if (isChartReady("sectorChart")) updateSectorChartMarker();
+          if (isChartReady("comparisonChart")) updateComparisonChartMarker();
+          if (isChartReady("sectorStackChart")) updateSectorStackMarker();
         });
       }
 
@@ -1144,6 +1160,8 @@
       function updateContinentLine() {
         const et = document.getElementById("lineChart").data;
         const cti = et.findIndex((t) => t.line && t.line.color === "#601A4A");
+        if (!isChartReady("lineChart")) return;
+
         if (cti !== -1) Plotly.deleteTraces("lineChart", cti);
         if (selectedContinent) {
           const ct = calculateContinentTrend(selectedContinent);
@@ -1341,6 +1359,13 @@
         renderSectorCandlestick(selectedCountry, defaultSector);
         renderComparisonChart(selectedCountry, cd.continent);
         renderSectorStackChart(selectedCountry, defaultSector);
+        // Ensure updates run only after the charts finish rendering
+        setTimeout(() => {
+          if (isChartReady("sectorChart")) updateSectorChartMarker();
+          if (isChartReady("comparisonChart")) updateComparisonChartMarker();
+          if (isChartReady("sectorStackChart")) updateSectorStackMarker();
+        }, 50);
+
         sel.addEventListener("change", (e) => {
           renderSectorCandlestick(selectedCountry, e.target.value);
           renderSectorStackChart(selectedCountry, e.target.value);
@@ -1975,9 +2000,6 @@
         );
       }
       window.addEventListener("load", () => {
-        Plotly.Plots.resize(document.getElementById("worldMap"));
-      });
-      window.addEventListener("resize", () => {
         Plotly.Plots.resize(document.getElementById("worldMap"));
       });
 
