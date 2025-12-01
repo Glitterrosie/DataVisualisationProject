@@ -982,6 +982,72 @@
         "#661F17", // 40–60
         "#3E140F", // 60–100  darkest shade
       ];
+      const HOVER_LABEL_STYLE = {
+        bgcolor: "#3f3f46", // dark gray box
+        font: { color: "#ffffff" }, // white text
+        bordercolor: "rgba(0,0,0,0)", // no border
+      };
+
+      const TINY_COUNTRIES = {
+        // Pacific microstates
+        PLW: { lon: 134.5825, lat: 7.515, label: "Palau" },
+        NRU: { lon: 166.93, lat: -0.53, label: "Nauru" },
+        TUV: { lon: 179.19, lat: -8.52, label: "Tuvalu" },
+        KIR: { lon: -157.36, lat: 1.87, label: "Kiribati" },
+        MHL: { lon: 171.184, lat: 7.131, label: "Marshall Islands" },
+
+        // Caribbean tiny states
+        GRD: { lon: -61.67, lat: 12.12, label: "Grenada" },
+        KNA: { lon: -62.75, lat: 17.3, label: "St. Kitts & Nevis" },
+        LCA: { lon: -60.98, lat: 13.91, label: "St. Lucia" },
+        VCT: { lon: -61.22, lat: 13.17, label: "St. Vincent & Grenadines" },
+        DMA: { lon: -61.39, lat: 15.44, label: "Dominica" },
+        BRB: { lon: -59.543, lat: 13.1939, label: "Barbados" },
+        ATG: { lon: -61.8, lat: 17.12, label: "Antigua & Barbuda" },
+
+        // Indian Ocean
+        MDV: { lon: 73.52, lat: 3.2, label: "Maldives" },
+        SYC: { lon: 55.45, lat: -4.62, label: "Seychelles" },
+        COM: { lon: 43.33, lat: -11.68, label: "Comoros" },
+
+        // Africa (continent tiny nations)
+        CPV: { lon: -23.57, lat: 15.12, label: "Cape Verde" },
+        STP: { lon: 6.73, lat: 0.23, label: "São Tomé & Príncipe" },
+
+        // Europe microstates
+        AND: { lon: 1.5218, lat: 42.5063, label: "Andorra" },
+        LIE: { lon: 9.55, lat: 47.166, label: "Liechtenstein" },
+        MCO: { lon: 7.416, lat: 43.733, label: "Monaco" },
+        SMR: { lon: 12.46, lat: 43.94, label: "San Marino" },
+        VAT: { lon: 12.45, lat: 41.9, label: "Vatican City" },
+
+        // Asia small states
+        SGP: { lon: 103.8198, lat: 1.3521, label: "Singapore" },
+        BHR: { lon: 52.55, lat: 26.07, label: "Bahrain" },
+
+        // Oceania
+        FJI: { lon: 178.07, lat: -17.71, label: "Fiji" }, // not tiny but often invisible
+        TLS: { lon: 125.57, lat: -8.53, label: "Timor-Leste" },
+
+        // Rare but sometimes included
+        TON: { lon: -175.2, lat: -21.17, label: "Tonga" },
+        WSM: { lon: -172.104, lat: -13.759, label: "Samoa" },
+      };
+
+      // === Helper to get a bin color for a given per-capita value (NEW) ===
+      function getBinColorFromValue(valueTons) {
+        // valueTons is emissions_per_capita (tCO2eq per person)
+        const g = valueTons * 1_000_000; // convert to "gCO2eq" like your bins
+        if (!Number.isFinite(g) || g <= 0) return "#f1f5f9"; // fallback pale grey
+
+        for (let i = 0; i < BIN_EDGES.length - 1; i++) {
+          if (g <= BIN_EDGES[i + 1]) {
+            return BIN_COLORS[i];
+          }
+        }
+        // if it's > last edge, use the darkest bin
+        return BIN_COLORS[BIN_COLORS.length - 1];
+      }
 
       const COLOR_CMIN = 0;
       const COLOR_CMAX = 60; // we clamp 60+ into this last bin
@@ -1007,6 +1073,7 @@
           return Math.min(v, 100); // clamp 60+ into last bin (60–100)
         });
 
+        // --- original choropleth trace (UNCHANGED except for variable name) ---
         const trace = {
           type: "choropleth",
           locations: cyd.map((d) => d.iso_code),
@@ -1023,20 +1090,65 @@
           zmax: COLOR_CMAX,
           marker: { line: { color: "rgba(255,255,255,0.6)", width: 0.5 } },
           coloraxis: "coloraxis",
+          hoverlabel: HOVER_LABEL_STYLE, // <-- NEW
         };
+
+        // --- NEW: tiny countries as scattergeo points ---
+        const tinyPoints = cyd.filter((d) => TINY_COUNTRIES[d.iso_code]);
+        let tinyTrace = null;
+
+        if (tinyPoints.length > 0) {
+          const tinyLons = tinyPoints.map(
+            (d) => TINY_COUNTRIES[d.iso_code].lon
+          );
+          const tinyLats = tinyPoints.map(
+            (d) => TINY_COUNTRIES[d.iso_code].lat
+          );
+
+          tinyTrace = {
+            type: "scattergeo",
+            geo: "geo",
+            mode: "markers",
+            lon: tinyLons,
+            lat: tinyLats,
+
+            text: tinyPoints.map((d) => d.country),
+            customdata: tinyPoints.map((d) => [
+              d.iso_code,
+              Math.round(d.emissions_per_capita * 1_000_000).toLocaleString(),
+            ]),
+
+            marker: {
+              size: 6,
+              sizemode: "area",
+              sizeref: 1,
+              color: tinyPoints.map((d) =>
+                getBinColorFromValue(d.emissions_per_capita)
+              ),
+              line: { color: "#ffffff", width: 0.7 },
+              opacity: 0.95,
+            },
+
+            hovertemplate:
+              "<b>%{text}</b><br>%{customdata[1]} tCO₂eq per Capita<extra></extra>",
+            hoverlabel: HOVER_LABEL_STYLE,
+
+            name: "Tiny countries",
+            showlegend: false,
+
+            // ⭐ shrink the hitbox ⭐
+            hoverclosest: false,
+            hoverdistance: 5,
+            pointthreshold: 5,
+          };
+        }
 
         const layout = {
           geo: {
-            domain: {
-              x: [0, 1],
-              y: [0, 1],
-            },
-            projection: {
-              type: "natural earth",
-              scale: 0.9,
-            },
+            domain: { x: [0, 1], y: [0, 1] },
+            projection: { type: "natural earth", scale: 0.9 },
             fitbounds: "locations",
-            center: { lon: 0, lat: 10 }, // center the world view
+            center: { lon: 0, lat: 10 },
             showcoastlines: true,
             coastlinecolor: "rgba(99,172,190,0.25)",
             coastlinewidth: 0.5,
@@ -1048,7 +1160,6 @@
             countrycolor: "rgba(255,255,255,0.4)",
             bgcolor: "rgba(0,0,0,0)",
             showframe: false,
-            // These settings lock the map
             lataxis: { range: [-90, 90] },
             lonaxis: { range: [-180, 180] },
           },
@@ -1077,16 +1188,28 @@
           },
           margin: { l: 0, r: 0, t: 0, b: 0 },
           paper_bgcolor: "rgba(0,0,0,0)",
-          dragmode: false, // disable all dragging
+          dragmode: false,
         };
 
-        Plotly.newPlot("worldMap", [trace], layout, {
+        let traces = [];
+
+        if (tinyTrace) traces.push(tinyTrace); // put tiny dots FIRST (bottom layer)
+        traces.push(trace); // put choropleth LAST (top layer)
+
+        Plotly.newPlot("worldMap", traces, layout, {
           responsive: true,
           displayModeBar: false,
           scrollZoom: false,
         }).then((gd) => {
           gd.on("plotly_click", function (data) {
-            const iso = data.points[0].location;
+            const pt = data.points[0];
+
+            // choropleth points -> use pt.location
+            // tiny scatter points -> use customdata[0] (iso_code)
+            const iso =
+              pt.location || (pt.customdata && pt.customdata[0]) || null;
+
+            if (!iso) return;
 
             if (selectedCountry === iso) {
               clearCountrySelection();
@@ -1098,18 +1221,23 @@
           });
         });
       }
-      window.addEventListener("resize", () => {
-        Plotly.Plots.resize(document.getElementById("worldMap"));
-      });
-
       function removeMapHighlight() {
         const gd = document.getElementById("worldMap");
+        if (!gd || !gd.data) return;
 
-        // Find the whitening overlay trace by its name
+        // 1. Remove overlay trace (this greys out all other countries)
         const overlayIndex = gd.data.findIndex((t) => t.name === "overlay");
-
         if (overlayIndex !== -1) {
           Plotly.deleteTraces(gd, overlayIndex);
+        }
+
+        // 2. Restore tiny-country dots opacity
+        const tinyIndex = gd.data.findIndex((t) => t.name === "Tiny countries");
+        if (tinyIndex !== -1) {
+          const traceTiny = gd.data[tinyIndex];
+          const cd = traceTiny.customdata || [];
+          const opacities = cd.map(() => 0.95); // default opacity
+          Plotly.restyle(gd, { "marker.opacity": [opacities] }, [tinyIndex]);
         }
       }
 
@@ -1132,12 +1260,16 @@
           return Math.min(v, COLOR_CMAX);
         });
 
+        const gd = document.getElementById("worldMap");
+        if (!gd || !gd.data) return;
+
+        // --- Update choropleth (trace 0) ---
         Plotly.restyle(
-          "worldMap",
+          gd,
           {
             z: [zVals],
             locations: [cyd.map((d) => d.iso_code)],
-            text: [cyd.map((d) => d.Name)],
+            text: [cyd.map((d) => d.Name || d.country)],
             customdata: [
               cyd.map((d) => [
                 Math.round(d.emissions_per_capita * 1_000_000).toLocaleString(),
@@ -1147,6 +1279,44 @@
           },
           [0]
         );
+
+        // --- Update tiny countries trace, if it exists ---
+        const tinyIndex = gd.data.findIndex((t) => t.name === "Tiny countries");
+        if (tinyIndex !== -1) {
+          const tinyPoints = cyd.filter((d) => TINY_COUNTRIES[d.iso_code]);
+
+          const tinyLons = tinyPoints.map(
+            (d) => TINY_COUNTRIES[d.iso_code].lon
+          );
+          const tinyLats = tinyPoints.map(
+            (d) => TINY_COUNTRIES[d.iso_code].lat
+          );
+          const tinyCustom = tinyPoints.map((d) => [
+            d.iso_code,
+            Math.round(d.emissions_per_capita * 1_000_000).toLocaleString(),
+          ]);
+          const tinyColors = tinyPoints.map((d) =>
+            getBinColorFromValue(d.emissions_per_capita)
+          );
+          const opacities = tinyPoints.map(() => 0.95);
+
+          Plotly.restyle(
+            gd,
+            {
+              lon: [tinyLons],
+              lat: [tinyLats],
+              customdata: [tinyCustom],
+              "marker.color": [tinyColors],
+              "marker.opacity": [opacities],
+            },
+            [tinyIndex]
+          );
+        }
+
+        // keep your existing highlight behavior if a country is selected
+        if (selectedCountry) {
+          updateMapHighlight(selectedCountry);
+        }
       }
 
       function updateLineChartMarker() {
@@ -1191,20 +1361,18 @@
       //helper function greying outfunction function
       function updateMapHighlight(selectedISO) {
         const gd = document.getElementById("worldMap");
+        if (!gd || !gd.data) return;
 
-        // Original map trace stays as-is
+        // --- Existing overlay logic for choropleth (trace 0) ---
         const trace = gd.data[0];
-
-        // Build overlay z: 1 = grey, 0 = transparent
         const overlayZ = trace.locations.map((iso) =>
           iso === selectedISO ? 0 : 1
         );
 
-        // Check if overlay trace already exists (index 1)
-        if (gd.data.length > 1 && gd.data[1].name === "overlay") {
-          Plotly.restyle(gd, { z: [overlayZ] }, [1]);
+        const overlayIndex = gd.data.findIndex((t) => t.name === "overlay");
+        if (overlayIndex !== -1) {
+          Plotly.restyle(gd, { z: [overlayZ] }, [overlayIndex]);
         } else {
-          // Add overlay trace
           Plotly.addTraces(gd, {
             type: "choropleth",
             locations: trace.locations,
@@ -1220,6 +1388,19 @@
             zmax: 1,
             marker: { line: { width: 0 } },
           });
+        }
+
+        // --- NEW: dim non-selected tiny country dots ---
+        const tinyIndex = gd.data.findIndex((t) => t.name === "Tiny countries");
+        if (tinyIndex !== -1) {
+          const traceTiny = gd.data[tinyIndex];
+          const cd = traceTiny.customdata || [];
+          const opacities = cd.map((row) => {
+            const iso = Array.isArray(row) ? row[0] : row;
+            return iso === selectedISO ? 1 : 0.15;
+          });
+
+          Plotly.restyle(gd, { "marker.opacity": [opacities] }, [tinyIndex]);
         }
       }
 
