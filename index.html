@@ -498,8 +498,43 @@
             </div>
             <!-- end wrapper -->
           </div>
+
           <div class="card world-card">
             <div class="card-header">Map on the Emissions per Capita</div>
+            <div
+              style="
+                padding: 6px 25px 2px 25px;
+                display: flex;
+                gap: 10px;
+                align-items: center;
+              "
+            >
+              <input
+                id="countrySearch"
+                type="text"
+                placeholder="Search country..."
+                style="
+                  flex: 1;
+                  padding: 10px 14px;
+                  border: 1px solid #ddd;
+                  border-radius: 8px;
+                  font-size: 1rem;
+                "
+              />
+              <button
+                onclick="runCountrySearch()"
+                style="
+                  padding: 10px 16px;
+                  border: none;
+                  border-radius: 8px;
+                  background: #ef442f;
+                  color: white;
+                  cursor: pointer;
+                "
+              >
+                Go
+              </button>
+            </div>
             <div class="world-map-container">
               <div id="worldMap"></div>
             </div>
@@ -1066,6 +1101,50 @@
       }
 
       const discreteColorscale = buildDiscreteColorscale();
+      function runCountrySearch() {
+        const input = document
+          .getElementById("countrySearch")
+          .value.trim()
+          .toLowerCase();
+        if (!input) return;
+
+        // Try match by country name
+        let match = allData.find(
+          (d) => d.country.toLowerCase() === input && d.year === currentYear
+        );
+
+        // Try partial match
+        if (!match) {
+          match = allData.find(
+            (d) =>
+              d.country.toLowerCase().includes(input) && d.year === currentYear
+          );
+        }
+
+        // Try ISO match
+        if (!match && input.length === 3) {
+          match = allData.find(
+            (d) => d.iso_code.toLowerCase() === input && d.year === currentYear
+          );
+        }
+
+        if (!match) {
+          alert("Country not found");
+          return;
+        }
+
+        // ☑ Auto-select country like a click
+        selectCountry(match.iso_code);
+
+        // Optional: scroll to country details
+        const el = document.getElementById("countryDetails");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      document
+        .getElementById("countrySearch")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter") runCountrySearch();
+        });
 
       function createWorldMap() {
         const cyd = allData.filter((d) => d.year === currentYear);
@@ -1243,16 +1322,6 @@
         }
       }
 
-      function clearCountrySelection() {
-        selectedCountry = null;
-        selectedContinent = null;
-
-        removeMapHighlight(); // <-- important
-
-        updateContinentLine();
-        document.getElementById("countryDetails").style.display = "none";
-      }
-
       function updateWorldMap() {
         const cyd = allData.filter((d) => d.year === currentYear);
 
@@ -1421,8 +1490,18 @@
       function clearCountrySelection() {
         selectedCountry = null;
         selectedContinent = null;
+
+        // remove highlight overlay + reset tiny dots
+        removeMapHighlight();
+
+        // remove continent line on chart
         updateContinentLine();
+
+        // hide bottom panel
         document.getElementById("countryDetails").style.display = "none";
+
+        // update legend to remove continent entry
+        updateLegend();
       }
 
       function updateLegend() {
