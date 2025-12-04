@@ -1259,7 +1259,7 @@
           tinyTrace = {
             type: "scattergeo",
             geo: "geo",
-            mode: "markers",
+            mode: "marker",
             lon: tinyLons,
             lat: tinyLats,
 
@@ -1270,8 +1270,8 @@
             ]),
 
             marker: {
-              size: 6,
-              sizemode: "area",
+              size: 4,
+              sizemode: "diameter",
               sizeref: 1,
               color: tinyPoints.map((d) =>
                 getBinColorFromValue(d.emissions_per_capita)
@@ -1286,11 +1286,9 @@
 
             name: "Tiny countries",
             showlegend: false,
-
-            // ⭐ shrink the hitbox ⭐
-            hoverclosest: false,
-            hoverdistance: 5,
-            pointthreshold: 5,
+            hoverclosest: true,
+            hoverdistance: 1,
+            pointthreshold: 0,
           };
         }
 
