@@ -204,6 +204,30 @@
         padding: 0 70px; /* or whatever horizontal padding you want */
         box-sizing: border-box;
       }
+      .suggestions {
+        position: absolute;
+        top: 42px;
+        left: 25px;
+        width: 240px;
+        background: white;
+        border: 1px solid #eee;
+        border-radius: 6px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        z-index: 20;
+        display: none;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .suggestions div {
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+
+      .suggestions div:hover {
+        background: #f1f5f9;
+      }
 
       #worldMap {
         width: 100%;
@@ -503,6 +527,7 @@
             <div class="card-header">Map on the Emissions per Capita</div>
             <div
               style="
+                position: relative;
                 padding: 6px 25px 2px 25px;
                 display: flex;
                 gap: 10px;
@@ -514,27 +539,35 @@
                 type="text"
                 placeholder="Search country..."
                 style="
-                  flex: 1;
+                  flex: 1; /* make it stretch */
                   padding: 10px 14px;
                   border: 1px solid #ddd;
                   border-radius: 8px;
                   font-size: 1rem;
                 "
+                oninput="showSuggestions(this.value)"
+                autocomplete="off"
               />
+
               <button
                 onclick="runCountrySearch()"
                 style="
-                  padding: 10px 16px;
+                  padding: 10px 18px;
                   border: none;
                   border-radius: 8px;
                   background: #ef442f;
                   color: white;
                   cursor: pointer;
+                  font-size: 1rem;
+                  white-space: nowrap;
                 "
               >
                 Go
               </button>
+
+              <div id="countrySuggestions" class="suggestions"></div>
             </div>
+
             <div class="world-map-container">
               <div id="worldMap"></div>
             </div>
@@ -1135,16 +1168,53 @@
 
         // ☑ Auto-select country like a click
         selectCountry(match.iso_code);
-
-        // Optional: scroll to country details
-        const el = document.getElementById("countryDetails");
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
       }
       document
         .getElementById("countrySearch")
         .addEventListener("keypress", (e) => {
           if (e.key === "Enter") runCountrySearch();
         });
+      function showSuggestions(query) {
+        const box = document.getElementById("countrySuggestions");
+        box.innerHTML = "";
+        box.style.display = "none";
+
+        query = query.trim().toLowerCase();
+        if (query.length < 2) return;
+
+        // get all country names from your data
+        const names = [...new Set(allData.map((d) => d.country))];
+
+        // filter matches
+        const matches = names
+          .filter((name) => name.toLowerCase().includes(query))
+          .slice(0, 12); // limit results
+
+        if (matches.length === 0) return;
+
+        box.style.display = "block";
+
+        matches.forEach((name) => {
+          const item = document.createElement("div");
+          item.textContent = name;
+          item.onclick = () => pickSuggestion(name);
+          box.appendChild(item);
+        });
+      }
+
+      function pickSuggestion(name) {
+        document.getElementById("countrySearch").value = name;
+        document.getElementById("countrySuggestions").style.display = "none";
+        runCountrySearch(); // optional: auto search when clicked
+      }
+
+      // hide list if clicked outside
+      document.addEventListener("click", (e) => {
+        const box = document.getElementById("countrySuggestions");
+        if (!box.contains(e.target) && e.target.id !== "countrySearch") {
+          box.style.display = "none";
+        }
+      });
 
       function createWorldMap() {
         const cyd = allData.filter((d) => d.year === currentYear);
