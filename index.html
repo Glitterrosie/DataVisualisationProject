@@ -797,7 +797,7 @@
       function createLineChart() {
         const gt = calculateGlobalTrend();
         const maxE = Math.max(...gt.map((d) => d.emissions));
-        const chartMax = Math.ceil(maxE / 10) * 10; 
+        const chartMax = Math.ceil(maxE / 10) * 10;
 
         const milestones = [
           { year: 2015, label: "Paris Agreement Adoption" },
@@ -1006,7 +1006,7 @@
       };
 
       function getBinColorFromValue(valueMegaTons) {
-        const g = valueMegaTons * 1_000_000; 
+        const g = valueMegaTons * 1_000_000;
         if (!Number.isFinite(g) || g <= 0) return "#f1f5f9";
 
         for (let i = 0; i < BIN_EDGES.length - 1; i++) {
@@ -1132,10 +1132,9 @@
           zmax: COLOR_CMAX,
           marker: { line: { color: "rgba(255,255,255,0.6)", width: 0.5 } },
           coloraxis: "coloraxis",
-          hoverlabel: HOVER_LABEL_STYLE, 
+          hoverlabel: HOVER_LABEL_STYLE,
         };
 
-        
         const tinyPoints = cyd.filter((d) => TINY_COUNTRIES[d.iso_code]);
         let tinyTrace = null;
 
@@ -1609,7 +1608,7 @@
             const pop = populationByKey[key];
             if (!pop) return;
             if (!yearToVals[r.year]) yearToVals[r.year] = [];
-            
+
             yearToVals[r.year].push(Number(r.emissions) / pop);
           });
 
@@ -1817,6 +1816,9 @@
       }
 
       function renderComparisonChart(iso, continentName) {
+        const countryName =
+          allData.find((r) => r.iso_code === iso)?.country || iso;
+
         const years = collectYearsGlobal();
         const xCats = years.map((y) => String(y));
         const countrySeries = calculateCountryGlobalSeriesPerCapita(iso, years);
@@ -1878,7 +1880,7 @@
         traces.push({
           type: "scatter",
           mode: "lines+markers",
-          name: "Selected Country",
+          name: countryName,
           x: xCats,
           y: countrySeries.y,
           connectgaps: true,
