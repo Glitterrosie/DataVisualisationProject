@@ -11,6 +11,8 @@ This is a project developed together in the course "Data Visualisation" at Aarhu
    └── data/
        ├── greenhouse_gas_with_population.csv
        └── greenhouse_gas_per_sector.csv
+       └── global_temperature_increase.csv
+
 ```
 
 2. Start a local server:
@@ -36,23 +38,6 @@ This is a project developed together in the course "Data Visualisation" at Aarhu
 5. Now go to your terminal and navigate to the location where you can to put the code.
 6. Enter `git clone copied-http-here`, to clone the repo in this location.
 7. Now you can open this folder in e.g. Visual Studio Code.
-
-
-### Create and activate your virtual environment
-We need a bunch of libraries to implement the visualisation. In order to have them locally running and also synchronized across our different computers, you need to setup a **virtual environment**. In this environment all dependencies are installed.
-1. The virtual environment (venv) is already initialized. You only need to activate it
-- Linux/Mac OS: `source venv/bin/activate`
-- Windows: `venv\scripts\activate`
-2. Once activated the virtual environment hold every dependency defined in the `requirements.txt`.
-3. To add a library (dependency): 
-    1. `pip install package_name`
-    2. `pip freeze > requirements.txt`
-4. To remove a library (dependency):
-    1. `pip uninstall package_name`
-    2. `pip freeze > requirements.txt`
-
-For further details visit this [page](https://www.reddit.com/r/learnpython/comments/m3exau/setting_up_first_python_project_environment/)
-
 
 ### How to use Git for this project
 Git is a version control tool that enables us to work on our features seperatly and then merge them together. If you want to work on a feature you need to follow these steps:

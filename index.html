@@ -8,12 +8,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
       html {
-        font-size: 14px; /* shrink entire dashboard safely */
+        font-size: 14px;
       }
 
       @media (min-width: 1500px) {
         html {
-          font-size: 13px; /* even smaller on large monitors */
+          font-size: 13px;
         }
       }
 
@@ -28,9 +28,6 @@
         background: #f8f9fa;
         padding: 25px;
         color: #1e293b;
-      }
-      body {
-        padding: 15px;
       }
       .container {
         max-width: 1800px;
@@ -107,7 +104,7 @@
         margin-top: 20px;
         padding: 0 40px;
         overflow-x: auto;
-        min-height: 110px; /* FIX: prevents collapse on first render */
+        min-height: 110px;
         overflow: hidden;
       }
 
@@ -190,7 +187,7 @@
         border: none;
         box-shadow: 0 2px 6px rgba(246, 59, 59, 0.4);
       }
-      /* nicely spaced year marks under the slider */
+
       .year-marks {
         display: flex;
         justify-content: space-between;
@@ -201,7 +198,7 @@
 
       .chart-wrapper {
         width: 100%;
-        padding: 0 70px; /* or whatever horizontal padding you want */
+        padding: 0 70px;
         box-sizing: border-box;
       }
       .suggestions {
@@ -238,7 +235,7 @@
 
       .country-details {
         animation: slideIn 0.3s ease-out;
-        padding: 0; /* remove inner spacing */
+        padding: 0;
         margin: 0;
       }
       @keyframes slideIn {
@@ -396,7 +393,6 @@
         }
       }
 
-      /* Bigger, clearer sector selector */
       .sector-select-row {
         display: flex;
         align-items: center;
@@ -425,24 +421,22 @@
         box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);
       }
       #sectorSelect option {
-        font-size: 2rem; /* ← NEU HINZUFÜGEN */
+        font-size: 2rem;
         padding: 8px;
       }
-      /* The card itself */
+
       .world-card {
         padding: 0 !important;
         display: flex;
         flex-direction: column;
       }
 
-      /* Header stays fixed */
       .world-card .card-header {
         padding: 20px 25px;
         border-bottom: 2px solid #f1f5f9;
         flex: 0 0 auto;
       }
 
-      /* This is the area the map can occupy */
       .world-map-container {
         flex: 1 1 auto;
         width: 100%;
@@ -454,13 +448,9 @@
         position: relative;
       }
 
-      /* The Plotly map itself */
       #worldMap {
-        /* width: 100% !important;
-        height: 100% !important; */
-
-        max-width: 1100px; /* ⬅ control map width size */
-        max-height: 520px; /* ⬅ control map height size */
+        max-width: 1100px;
+        max-height: 520px;
         margin: auto;
       }
     </style>
@@ -500,7 +490,6 @@
               Global Greenhouse Gas Emissions Development
             </div>
 
-            <!-- new wrapper to align chart & slider -->
             <div class="chart-wrapper">
               <div id="lineChart"></div>
               <div class="legend-container" id="legendContainer"></div>
@@ -520,7 +509,6 @@
                 <div class="year-marks" id="yearMarks"></div>
               </div>
             </div>
-            <!-- end wrapper -->
           </div>
 
           <div class="card world-card">
@@ -604,34 +592,6 @@
         return el && el.data && el.data.length > 0;
       }
 
-      // ==============================
-      // GLOBAL STATIC PERCENTILE BINS
-      // ==============================
-      const globalQuantiles = [0, 0.1, 0.25, 0.5, 0.75, 0.9, 0.97, 1];
-      let globalThresholds = [];
-      let globalBinPositions = []; // z-space positions (0..1)
-
-      function buildGlobalThresholds() {
-        const values = allData
-          .map((d) => d.emissions_per_capita * 1_000_000)
-          .filter((v) => Number.isFinite(v));
-
-        const sorted = [...values].sort((a, b) => a - b);
-        if (!sorted.length) {
-          globalThresholds = [0, 1];
-          globalBinPositions = [0, 1];
-          return;
-        }
-
-        globalThresholds = globalQuantiles.map((q) => {
-          const idx = Math.floor(q * (sorted.length - 1));
-          return sorted[idx];
-        });
-
-        const nBins = globalThresholds.length;
-        globalBinPositions = globalThresholds.map((_, i) => i / (nBins - 1));
-      }
-
       async function init() {
         try {
           const mainResponse = await fetch(
@@ -660,7 +620,7 @@
             header: true,
             dynamicTyping: true,
             skipEmptyLines: true,
-          }).data; // NEW
+          }).data;
 
           allData = allData.filter(
             (row) =>
@@ -670,7 +630,6 @@
               row.emissions
           );
 
-          // Replace empty/missing continents with "Undefined"
           allData.forEach((row) => {
             if (!row.continent || row.continent.trim() === "") {
               row.continent = "Undefined";
@@ -694,7 +653,6 @@
               100;
           });
 
-          // Build population lookup (approx): population = emissions / emissions_per_capita
           allData.forEach((d) => {
             const key = d.iso_code + "_" + d.year;
             const pop =
@@ -703,9 +661,6 @@
                 : null;
             if (pop && isFinite(pop)) populationByKey[key] = pop;
           });
-
-          // Build global thresholds ONCE for static percentile bins
-          buildGlobalThresholds();
 
           const years = [...new Set(allData.map((d) => d.year))].sort(
             (a, b) => a - b
@@ -723,12 +678,11 @@
           createWorldMap();
 
           document.getElementById("loading").style.display = "none";
-          // show content smoothly
+
           const mc = document.getElementById("mainContent");
           mc.style.opacity = "1";
           mc.style.pointerEvents = "auto";
 
-          // FORCE proper Plotly sizing after reveal
           setTimeout(() => {
             Plotly.Plots.resize(document.getElementById("lineChart"));
             Plotly.Plots.resize(document.getElementById("worldMap"));
@@ -794,7 +748,6 @@
           .sort((a, b) => a.year - b.year);
       }
 
-      // helper: hex <-> rgb and linear color interpolation for a smooth diverging scale
       function hexToRgb(hex) {
         const h = hex.replace("#", "").trim();
         return {
@@ -827,16 +780,6 @@
           b: lerp(A.b, B.b, t),
         });
       }
-      // diverging color: negative -> blue..white, positive -> white..red, small/zero -> pale neutral
-      function colorForValue(v, maxAbs) {
-        if (maxAbs <= 0) return "#e6eef9";
-        const t = Math.min(1, Math.abs(v) / maxAbs);
-        const blue = "#3b82f6",
-          white = "#ffffff",
-          red = "#ef4444";
-        if (v === 0) return "#f8fafc";
-        return v > 0 ? lerpColor(white, red, t) : lerpColor(blue, white, t);
-      }
 
       function calculateContinentTrend(continent) {
         const yg = {};
@@ -854,7 +797,7 @@
       function createLineChart() {
         const gt = calculateGlobalTrend();
         const maxE = Math.max(...gt.map((d) => d.emissions));
-        const chartMax = Math.ceil(maxE / 10) * 10; // Use consistent max value
+        const chartMax = Math.ceil(maxE / 10) * 10; 
 
         const milestones = [
           { year: 2015, label: "Paris Agreement Adoption" },
@@ -885,12 +828,11 @@
           },
         ];
 
-        // ---- Milestones (just lines, no text) ----
         const milestoneColor = "#BBD686";
         milestones.forEach((m) => {
           traces.push({
             x: [m.year, m.year],
-            y: [0, chartMax], // Changed: from 0 to full chart height
+            y: [0, chartMax],
             type: "scatter",
             mode: "lines",
             line: {
@@ -904,10 +846,9 @@
           });
         });
 
-        // selected year line
         traces.push({
           x: [currentYear, currentYear],
-          y: [0, chartMax], // Changed: from 0 to full chart height
+          y: [0, chartMax],
           type: "scatter",
           mode: "lines",
           name: "Selected",
@@ -932,13 +873,12 @@
             tickformat: "~s",
           },
           yaxis2: {
-            title: "Temperature Icrease(°C)",
+            title: "Temperature Increase(°C)",
             overlaying: "y",
             side: "right",
             range: [0, 2.5],
           },
           shapes: [
-            // 1.5°C line
             {
               type: "line",
               x0: yearRange.min,
@@ -948,7 +888,7 @@
               yref: "y2",
               line: { color: "#F2C94C", width: 2, dash: "dash" },
             },
-            // 2°C line
+
             {
               type: "line",
               x0: yearRange.min,
@@ -959,7 +899,7 @@
               line: { color: "#F2C94C", width: 2, dash: "dash" },
             },
           ],
-          annotations: [], // Initialize annotations array
+          annotations: [],
           margin: { l: 70, r: 70, t: 10, b: 40 },
           paper_bgcolor: "rgba(0,0,0,0)",
           plot_bgcolor: "#FAFAFA",
@@ -973,12 +913,11 @@
           hovermode: true,
         };
 
-        // Add rotated milestone labels as annotations
         milestones.forEach((m) => {
           layout.annotations.push({
             x: m.year,
             xref: "x",
-            y: 0, // Changed: position at the very bottom
+            y: 0,
             yref: "y",
             text: m.label,
             textangle: -90,
@@ -998,72 +937,26 @@
           displayModeBar: false,
         });
       }
-
-      let originalMapZ = []; // global variable
-      // // Convert TCO₂e → gCO₂e and assign a 0–11 bin
-      // // --- BINNING: return 1–11 for real data, null for no data -------------
-      // function perCapitaIntervalColor(valueTons) {
-      //   if (!Number.isFinite(valueTons) || valueTons <= 0) return null; // no data
-      //   const g = valueTons * 1_000_000; // TCO₂e → gCO₂e
-
-      //   if (g <= 2) return 1;
-      //   if (g <= 5) return 2;
-      //   if (g <= 8) return 3;
-      //   if (g <= 12) return 4;
-      //   if (g <= 16) return 5;
-      //   if (g <= 20) return 6;
-      //   if (g <= 25) return 7;
-      //   if (g <= 30) return 8;
-      //   if (g <= 40) return 9;
-      //   if (g <= 60) return 10;
-      //   return 11; // 60+
-      // }
-
-      // const discreteColorscale = [
-      //   [0 / 11, "#fff5f5"],
-      //   [1 / 11, "#fff5f5"], // 0–2
-      //   [1 / 11, "#fee0e0"],
-      //   [2 / 11, "#fee0e0"], // 2–5
-      //   [2 / 11, "#fcbaba"],
-      //   [3 / 11, "#fcbaba"], // 5–8
-      //   [3 / 11, "#fa8f8f"],
-      //   [4 / 11, "#fa8f8f"], // 8–12
-      //   [4 / 11, "#f66969"],
-      //   [5 / 11, "#f66969"], // 12–16
-      //   [5 / 11, "#ef4444"],
-      //   [6 / 11, "#ef4444"], // 16–20
-      //   [6 / 11, "#dc2626"],
-      //   [7 / 11, "#dc2626"], // 20–25
-      //   [7 / 11, "#b91c1c"],
-      //   [8 / 11, "#b91c1c"], // 25–30
-      //   [8 / 11, "#8a1313"],
-      //   [9 / 11, "#8a1313"], // 30–40
-      //   [9 / 11, "#5c0b0b"],
-      //   [10 / 11, "#5c0b0b"], // 40–60
-      //   [10 / 11, "#380606"],
-      //   [1, "#380606"], // 60+
-      // ];
-      // Bin edges in gCO₂e per capita
       // True data bins
       const BIN_EDGES = [0, 2, 5, 8, 12, 16, 20, 25, 30, 40, 60, 100];
 
       const BIN_COLORS = [
-        "#FDE9E6", // 0–2      very light tint
+        "#FDE9E6", // 0–2
         "#F9C5BE", // 2–5
         "#F5A197", // 5–8
         "#F17C70", // 8–12
         "#ED5B4C", // 12–16
-        "#EE442F", // 16–20   base dashboard red
+        "#EE442F", // 16–20
         "#D63C2A", // 20–25
         "#B73225", // 25–30
         "#8F281E", // 30–40
         "#661F17", // 40–60
-        "#3E140F", // 60–100  darkest shade
+        "#3E140F", // 60–100
       ];
       const HOVER_LABEL_STYLE = {
-        bgcolor: "#3f3f46", // dark gray box
-        font: { color: "#ffffff" }, // white text
-        bordercolor: "rgba(0,0,0,0)", // no border
+        bgcolor: "#3f3f46",
+        font: { color: "#ffffff" },
+        bordercolor: "rgba(0,0,0,0)",
       };
 
       const TINY_COUNTRIES = {
@@ -1112,23 +1005,21 @@
         WSM: { lon: -172.104, lat: -13.759, label: "Samoa" },
       };
 
-      // === Helper to get a bin color for a given per-capita value (NEW) ===
-      function getBinColorFromValue(valueTons) {
-        // valueTons is emissions_per_capita (tCO2eq per person)
-        const g = valueTons * 1_000_000; // convert to "gCO2eq" like your bins
-        if (!Number.isFinite(g) || g <= 0) return "#f1f5f9"; // fallback pale grey
+      function getBinColorFromValue(valueMegaTons) {
+        const g = valueMegaTons * 1_000_000; 
+        if (!Number.isFinite(g) || g <= 0) return "#f1f5f9";
 
         for (let i = 0; i < BIN_EDGES.length - 1; i++) {
           if (g <= BIN_EDGES[i + 1]) {
             return BIN_COLORS[i];
           }
         }
-        // if it's > last edge, use the darkest bin
+
         return BIN_COLORS[BIN_COLORS.length - 1];
       }
 
       const COLOR_CMIN = 0;
-      const COLOR_CMAX = 60; // we clamp 60+ into this last bin
+      const COLOR_CMAX = 60;
 
       function buildDiscreteColorscale() {
         const cs = [];
@@ -1149,12 +1040,10 @@
           .toLowerCase();
         if (!input) return;
 
-        // Try match by country name
         let match = allData.find(
           (d) => d.country.toLowerCase() === input && d.year === currentYear
         );
 
-        // Try partial match
         if (!match) {
           match = allData.find(
             (d) =>
@@ -1162,7 +1051,6 @@
           );
         }
 
-        // Try ISO match
         if (!match && input.length === 3) {
           match = allData.find(
             (d) => d.iso_code.toLowerCase() === input && d.year === currentYear
@@ -1174,7 +1062,6 @@
           return;
         }
 
-        // ☑ Auto-select country like a click
         selectCountry(match.iso_code);
       }
       document
@@ -1190,13 +1077,11 @@
         query = query.trim().toLowerCase();
         if (query.length < 2) return;
 
-        // get all country names from your data
         const names = [...new Set(allData.map((d) => d.country))];
 
-        // filter matches
         const matches = names
           .filter((name) => name.toLowerCase().includes(query))
-          .slice(0, 12); // limit results
+          .slice(0, 12);
 
         if (matches.length === 0) return;
 
@@ -1213,10 +1098,9 @@
       function pickSuggestion(name) {
         document.getElementById("countrySearch").value = name;
         document.getElementById("countrySuggestions").style.display = "none";
-        runCountrySearch(); // optional: auto search when clicked
+        runCountrySearch();
       }
 
-      // hide list if clicked outside
       document.addEventListener("click", (e) => {
         const box = document.getElementById("countrySuggestions");
         if (!box.contains(e.target) && e.target.id !== "countrySearch") {
@@ -1229,10 +1113,9 @@
 
         const zVals = cyd.map((d) => {
           const v = d.emissions_per_capita * 1_000_000;
-          return Math.min(v, 100); // clamp 60+ into last bin (60–100)
+          return Math.min(v, 100);
         });
 
-        // --- original choropleth trace (UNCHANGED except for variable name) ---
         const trace = {
           type: "choropleth",
           locations: cyd.map((d) => d.iso_code),
@@ -1249,10 +1132,10 @@
           zmax: COLOR_CMAX,
           marker: { line: { color: "rgba(255,255,255,0.6)", width: 0.5 } },
           coloraxis: "coloraxis",
-          hoverlabel: HOVER_LABEL_STYLE, // <-- NEW
+          hoverlabel: HOVER_LABEL_STYLE, 
         };
 
-        // --- NEW: tiny countries as scattergeo points ---
+        
         const tinyPoints = cyd.filter((d) => TINY_COUNTRIES[d.iso_code]);
         let tinyTrace = null;
 
@@ -1350,8 +1233,8 @@
         };
 
         let traces = [];
-        traces.push(trace); // choropleth FIRST
-        if (tinyTrace) traces.push(tinyTrace); // tiny points second (top)
+        traces.push(trace);
+        if (tinyTrace) traces.push(tinyTrace);
 
         Plotly.newPlot("worldMap", traces, layout, {
           responsive: true,
@@ -1361,8 +1244,6 @@
           gd.on("plotly_click", function (data) {
             const pt = data.points[0];
 
-            // choropleth points -> use pt.location
-            // tiny scatter points -> use customdata[0] (iso_code)
             const iso =
               pt.location || (pt.customdata && pt.customdata[0]) || null;
 
@@ -1382,18 +1263,16 @@
         const gd = document.getElementById("worldMap");
         if (!gd || !gd.data) return;
 
-        // 1. Remove overlay trace (this greys out all other countries)
         const overlayIndex = gd.data.findIndex((t) => t.name === "overlay");
         if (overlayIndex !== -1) {
           Plotly.deleteTraces(gd, overlayIndex);
         }
 
-        // 2. Restore tiny-country dots opacity
         const tinyIndex = gd.data.findIndex((t) => t.name === "Tiny countries");
         if (tinyIndex !== -1) {
           const traceTiny = gd.data[tinyIndex];
           const cd = traceTiny.customdata || [];
-          const opacities = cd.map(() => 0.95); // default opacity
+          const opacities = cd.map(() => 0.95);
           Plotly.restyle(gd, { "marker.opacity": [opacities] }, [tinyIndex]);
         }
       }
@@ -1410,7 +1289,6 @@
         const gd = document.getElementById("worldMap");
         if (!gd || !gd.data) return;
 
-        // --- Update choropleth (trace 0) ---
         Plotly.restyle(
           gd,
           {
@@ -1427,7 +1305,6 @@
           [0]
         );
 
-        // --- Update tiny countries trace, if it exists ---
         const tinyIndex = gd.data.findIndex((t) => t.name === "Tiny countries");
         if (tinyIndex !== -1) {
           const tinyPoints = cyd.filter((d) => TINY_COUNTRIES[d.iso_code]);
@@ -1460,7 +1337,6 @@
           );
         }
 
-        // keep your existing highlight behavior if a country is selected
         if (selectedCountry) {
           updateMapHighlight(selectedCountry);
         }
@@ -1469,7 +1345,7 @@
       function updateLineChartMarker() {
         const gt = calculateGlobalTrend();
         const maxE = Math.max(...gt.map((d) => d.emissions));
-        const chartMax = Math.ceil(maxE / 10) * 10; // Use consistent max value
+        const chartMax = Math.ceil(maxE / 10) * 10;
 
         const ti = selectedContinent
           ? document.getElementById("lineChart").data.length - 2
@@ -1477,7 +1353,7 @@
 
         Plotly.update(
           "lineChart",
-          { x: [[currentYear, currentYear]], y: [[0, chartMax]] }, // Changed to full height
+          { x: [[currentYear, currentYear]], y: [[0, chartMax]] },
           {},
           [ti]
         );
@@ -1505,12 +1381,10 @@
         updateLegend();
       }
 
-      //helper function greying outfunction function
       function updateMapHighlight(selectedISO) {
         const gd = document.getElementById("worldMap");
         if (!gd || !gd.data) return;
 
-        // --- Existing overlay logic for choropleth (trace 0) ---
         const trace = gd.data[0];
         const overlayZ = trace.locations.map((iso) =>
           iso === selectedISO ? 0 : 1
@@ -1537,7 +1411,6 @@
           });
         }
 
-        // --- NEW: dim non-selected tiny country dots ---
         const tinyIndex = gd.data.findIndex((t) => t.name === "Tiny countries");
         if (tinyIndex !== -1) {
           const traceTiny = gd.data[tinyIndex];
@@ -1554,11 +1427,10 @@
       function selectCountry(iso) {
         selectedCountry = iso;
 
-        // Find continent from the data
         const countryData = allData.find((d) => d.iso_code === iso);
         selectedContinent = countryData ? countryData.continent : null;
 
-        updateMapHighlight(iso); // <-- highlight the selected country
+        updateMapHighlight(iso);
         updateContinentLine();
         updateCountryDetails();
       }
@@ -1567,16 +1439,12 @@
         selectedCountry = null;
         selectedContinent = null;
 
-        // remove highlight overlay + reset tiny dots
         removeMapHighlight();
 
-        // remove continent line on chart
         updateContinentLine();
 
-        // hide bottom panel
         document.getElementById("countryDetails").style.display = "none";
 
-        // update legend to remove continent entry
         updateLegend();
       }
 
@@ -1637,7 +1505,7 @@
           .map(([sector, emissions]) => ({ sector, emissions }))
           .sort((a, b) => b.emissions - a.emissions);
 
-        let sectorHTML = ""; // removed previous sector breakdown chart
+        let sectorHTML = "";
 
         document.getElementById("countryDetails").style.display = "block";
         document.getElementById("countryDetails").innerHTML = `
@@ -1653,9 +1521,12 @@
             <div class="metric-card red" style="background:#EE442F; color: white" ><div class="metric-label" style="color:white">Greenhouse Gas Emissions per Capita</div><div class="metric-value" style="color:white">${Math.round(
               cd.emissions_per_capita * 1_000_000
             ).toLocaleString()}</div><div class="metric-unit", style="color:white">tCO₂eq</div></div>
-            <div class="metric-card purple" style="background:#601A4A; color: white"><div class="metric-label" style="color:white">Percentile</div><div class="metric-value" style="color:white">${cd.emissions_percentile.toFixed(
-              1
-            )}</div><div class="metric-unit", style="color:white">%</div></div>
+            <div class="metric-card purple" style="background:#601A4A; color: white">
+            <div class="metric-label" style="color:white">Global Rank</div>
+            <div class="metric-value" style="color:white">
+            Top ${(100 - cd.emissions_percentile).toFixed(1)}% globally
+            </div>
+            </div>
           </div>
           ${sectorHTML}
           <div class="detail-charts">
@@ -1684,7 +1555,6 @@
           <div id="sectorStackChart" style="width:100%; height:420px;"></div>
         </div>`;
 
-        // Populate sector selector and render chart
         const availableSectors = [...new Set(sectorData.map((r) => r.sector))]
           .sort()
           .filter((s) => s);
@@ -1706,7 +1576,7 @@
         renderSectorCandlestick(selectedCountry, defaultSector);
         renderComparisonChart(selectedCountry, cd.continent);
         renderSectorStackChart(selectedCountry, defaultSector);
-        // Ensure updates run only after the charts finish rendering
+
         setTimeout(() => {
           if (isChartReady("sectorChart")) updateSectorChartMarker();
           if (isChartReady("comparisonChart")) updateComparisonChartMarker();
@@ -1719,7 +1589,6 @@
         });
       }
 
-      // ------- Sector candlestick helpers -------
       function percentile(sortedArray, p) {
         if (!sortedArray.length) return null;
         const idx = (p / 100) * (sortedArray.length - 1);
@@ -1740,7 +1609,7 @@
             const pop = populationByKey[key];
             if (!pop) return;
             if (!yearToVals[r.year]) yearToVals[r.year] = [];
-            // per-capita sector value: sector_emissions / population
+            
             yearToVals[r.year].push(Number(r.emissions) / pop);
           });
 
@@ -1750,12 +1619,12 @@
 
         const means = years.map((y) => {
           const vals = yearToVals[y];
-          return vals.reduce((a, b) => a + b, 0) / vals.length; // no clamp
+          return vals.reduce((a, b) => a + b, 0) / vals.length;
         });
 
         const valuesByYear = {};
         years.forEach((y) => {
-          valuesByYear[y] = yearToVals[y]; // use raw per-capita values
+          valuesByYear[y] = yearToVals[y];
         });
 
         return { years, valuesByYear, means };
@@ -1767,16 +1636,16 @@
           .filter((r) => r.iso_code === iso && r.sector === sector)
           .forEach((r) => {
             const key = r.iso_code + "_" + r.year;
-            const pop = populationByKey[key]; // look up population for that country-year
+            const pop = populationByKey[key];
             if (pop) {
-              byYear[r.year] = Number(r.emissions) / pop; // per capita emissions
+              byYear[r.year] = Number(r.emissions) / pop;
             } else {
-              byYear[r.year] = null; // fallback if population missing
+              byYear[r.year] = null;
             }
           });
 
         const x = years;
-        const y = years.map((y) => byYear[y] ?? null); // maintain same order
+        const y = years.map((y) => byYear[y] ?? null);
         return { x, y };
       }
 
@@ -1815,7 +1684,6 @@
 
         if (!Number.isFinite(globalMin) || globalMin <= 0) globalMin = 1e-6;
 
-        // Include country series values in min/max calculation
         countrySeries.y.forEach((v) => {
           if (Number.isFinite(v) && v > 0) {
             globalMax = Math.max(globalMax, v);
@@ -1823,7 +1691,6 @@
           }
         });
 
-        // Calculate range with padding for log scale
         const yMin = globalMin * 0.3;
         const yMax = globalMax * 3;
 
@@ -1866,7 +1733,7 @@
             showgrid: true,
             gridcolor: "#eef2f7",
             type: "log",
-            range: [Math.log10(yMin * 1000000), Math.log10(yMax * 1000000)], // Explicitly set range in log space
+            range: [Math.log10(yMin * 1000000), Math.log10(yMax * 1000000)],
           },
           boxmode: "overlay",
           boxgap: 0.35,
@@ -1891,15 +1758,13 @@
         const el = document.getElementById("sectorChart");
         if (!el || !el.data || el.data.length < 3) return;
 
-        // Get the y-axis range from layout (in log space)
         const yAxisRange = el.layout.yaxis.range;
         if (!yAxisRange) return;
 
-        // Convert from log space back to linear space
         const minY = Math.pow(10, yAxisRange[0]);
         const maxY = Math.pow(10, yAxisRange[1]);
 
-        const ti = el.data.length - 1; // marker is last trace
+        const ti = el.data.length - 1;
         Plotly.update(
           "sectorChart",
           {
@@ -1910,7 +1775,7 @@
           [ti]
         );
       }
-      // ------- Continent & BRICS comparison chart -------
+
       const G7 = new Set(["CAN", "FRA", "DEU", "ITA", "JPN", "GBR", "USA"]);
 
       function collectYearsGlobal() {
@@ -1928,7 +1793,7 @@
         years.forEach((y) => {
           const vals = allData
             .filter((r) => r.year === y && includeFn(r))
-            .map((r) => Number(r.emissions_per_capita) * 1_000_000) // <-- convert to gCO₂
+            .map((r) => Number(r.emissions_per_capita) * 1_000_000)
             .filter((v) => Number.isFinite(v) && v > 0);
           if (vals.length) {
             minVals.push(Math.max(Math.min(...vals), eps));
@@ -1945,7 +1810,7 @@
         const byYear = {};
         allData.forEach((r) => {
           if (r.iso_code === iso) {
-            byYear[r.year] = r.emissions_per_capita * 1_000_000; // <-- convert to gCO₂
+            byYear[r.year] = r.emissions_per_capita * 1_000_000;
           }
         });
         return { x: years, y: years.map((y) => byYear[y] ?? null) };
@@ -1964,7 +1829,6 @@
           G7.has(r.iso_code)
         );
 
-        // Build area band using min then max with fill to next
         const traces = [];
 
         traces.push({
@@ -2023,7 +1887,6 @@
           hovertemplate: "%{x}: %{y:.4f} tCO₂eq per Capita<extra></extra>",
         });
 
-        // Calculate min/max for the range
         let globalMax = 0;
         let globalMin = Infinity;
 
@@ -2044,11 +1907,9 @@
 
         if (!Number.isFinite(globalMin) || globalMin <= 0) globalMin = 1e-6;
 
-        // Padding für Log-Skala (gleich wie Candlestick)
         const yMin = globalMin * 0.3;
         const yMax = globalMax * 3;
 
-        // Vertical marker
         traces.push({
           type: "scatter",
           mode: "lines",
@@ -2099,15 +1960,13 @@
         const el = document.getElementById("comparisonChart");
         if (!el || !el.data || el.data.length < 5) return;
 
-        // Get the y-axis range from layout (in log space)
         const yAxisRange = el.layout.yaxis.range;
         if (!yAxisRange) return;
 
-        // Convert from log space back to linear space
         const minY = Math.pow(10, yAxisRange[0]);
         const maxY = Math.pow(10, yAxisRange[1]);
 
-        const ti = el.data.length - 1; // marker last
+        const ti = el.data.length - 1;
         Plotly.update(
           "comparisonChart",
           {
@@ -2119,7 +1978,6 @@
         );
       }
 
-      // ------- Stacked sector chart for selected country -------
       function buildCountrySectorTimeSeries(iso) {
         const rows = sectorData.filter(
           (r) => r.iso_code === iso && r.year != null && r.emissions != null
@@ -2134,14 +1992,12 @@
           bySector[s] = new Array(years.length).fill(0);
         });
 
-        // Convert to per capita by dividing by population
         rows.forEach((r) => {
           const idx = years.indexOf(r.year);
           if (idx !== -1) {
             const key = r.iso_code + "_" + r.year;
             const pop = populationByKey[key];
             if (pop && pop > 0) {
-              // Emissions per capita in tons (multiply by 1000 to get tons instead of kilotons)
               bySector[r.sector][idx] +=
                 (Number(r.emissions) / pop) * 1_000_000 || 0;
             }
@@ -2168,13 +2024,12 @@
           "#755133", //brown
         ];
 
-        // Build traces with non-highlighted first, highlighted last for visual prominence
         const traces = [];
         ts.sectorNames.forEach((s, idx) => {
           const isHi = highlightedSector && s === highlightedSector;
           const base = palette[idx % palette.length];
           const lineW = isHi ? 2.5 : 1;
-          const alpha = isHi ? "CC" : "5"; // stronger fill for highlighted
+          const alpha = isHi ? "CC" : "5";
           traces.push({
             type: "scatter",
             mode: "lines",
@@ -2190,7 +2045,7 @@
         });
 
         let maxY = Math.max(...ts.totals, 0);
-        // Add padding for the range
+
         const yMax = maxY * 1.05;
 
         traces.push({
@@ -2204,15 +2059,12 @@
           showlegend: false,
         });
 
-        // Build direct labels on the right using annotations at mid-band positions
-        // Build direct labels on the right using annotations with excentric positioning to avoid overlap
         const lastIdx = ts.years.length ? ts.years.length - 1 : -1;
         const annotations = [];
         if (lastIdx >= 0) {
           let cumulative = 0;
-          const positions = []; // Store {y: actualY, label: ..., ...}
+          const positions = [];
 
-          // First pass: collect all label positions
           ts.sectorNames.forEach((s, idx) => {
             const base = palette[idx % palette.length];
             const val = Number(ts.bySector[s][lastIdx]) || 0;
@@ -2230,15 +2082,13 @@
             }
           });
 
-          // Second pass: adjust positions to avoid overlap
-          const minSpacing = maxY * 0.04; // Minimum spacing between labels (4% of chart height)
+          const minSpacing = maxY * 0.04;
           for (let i = 1; i < positions.length; i++) {
             if (positions[i].y - positions[i - 1].y < minSpacing) {
               positions[i].y = positions[i - 1].y + minSpacing;
             }
           }
 
-          // Third pass: create annotations with leader lines
           let cumulative2 = 0;
           ts.sectorNames.forEach((s, idx) => {
             const val = Number(ts.bySector[s][lastIdx]) || 0;
@@ -2247,7 +2097,6 @@
 
             const pos = positions.find((p) => p.sector === s);
             if (pos) {
-              // Always add leader line
               annotations.push({
                 xref: "paper",
                 yref: "y",
@@ -2264,7 +2113,6 @@
                 opacity: 0.6,
               });
 
-              // Add label
               annotations.push({
                 xref: "paper",
                 yref: "y",
@@ -2302,7 +2150,7 @@
             title: "Greenhouse Gas Emissions per Capita (tCO₂eq)",
             showgrid: true,
             gridcolor: "#eef2f7",
-            range: [0, yMax], // Explicitly set range
+            range: [0, yMax],
           },
           showlegend: false,
           annotations,
@@ -2329,7 +2177,6 @@
         const el = document.getElementById("sectorStackChart");
         if (!el || !el.data || el.data.length < 2) return;
 
-        // Get the y-axis range from layout
         const yAxisRange = el.layout.yaxis.range;
         if (!yAxisRange) return;
 
