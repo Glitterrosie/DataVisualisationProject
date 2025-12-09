@@ -470,7 +470,7 @@
           sector-specific contributions. Use the <b>year slider</b> to navigate
           through different time periods and <b>click on countries</b> to see
           detailed breakdowns. <br /><br />
-          The unit used is <b>MtCO₂eq</b> (or respectively <b>tCO₂eq</b>), which
+          The unit used is <b>MtCO₂e</b> (or respectively <b>tCO₂e</b>), which
           are CO₂ equivalent emissions, a standard unit to measure greenhouse
           gas emissions by converting different gases into the equivalent amount
           of CO₂ based on their global warming potential.
@@ -522,7 +522,7 @@
                 margin-bottom: 2px;
               "
             >
-              Click a country or search to see more
+              Click a country or search to see more!
             </div>
 
             <div
@@ -800,9 +800,9 @@
         const chartMax = Math.ceil(maxE / 10) * 10;
 
         const milestones = [
-          { year: 2015, label: "Paris Agreement Adoption" },
-          { year: 2018, label: "COP24 Katowice" },
-          { year: 2023, label: "COP28 Global Stocktake" },
+          { year: 2015, label: "2015 Paris Agreement Adoption" },
+          { year: 2018, label: "2018 Katowice COP24" },
+          { year: 2023, label: "2023 Global Stocktake COP28" },
         ];
 
         const traces = [
@@ -812,7 +812,7 @@
             type: "scatter",
             mode: "lines",
             name: "Global Greenhouse Gas Emissions",
-            line: { color: "#63ACBE", width: 3 },
+            line: { color: "#EE442F", width: 3 },
             yaxis: "y",
             hoverinfo: "x+y",
           },
@@ -822,13 +822,13 @@
             type: "scatter",
             mode: "lines",
             name: "Global Temperature Increase",
-            line: { color: "#EE442F", width: 2, dash: "dot" },
+            line: { color: "#63ACBE", width: 2},
             yaxis: "y2",
             hoverinfo: "x+y",
           },
         ];
 
-        const milestoneColor = "#BBD686";
+        const milestoneColor = "#EE442F";
         milestones.forEach((m) => {
           traces.push({
             x: [m.year, m.year],
@@ -866,7 +866,7 @@
             tickfont: { size: 10 },
           },
           yaxis: {
-            title: "Greenhouse Gas Emissions (MtCO₂eq)",
+            title: "Greenhouse Gas Emissions (MtCO₂e)",
             showgrid: true,
             gridcolor: "#f1f5f9",
             range: [0, chartMax],
@@ -886,7 +886,7 @@
               y0: 1.5,
               y1: 1.5,
               yref: "y2",
-              line: { color: "#F2C94C", width: 2, dash: "dash" },
+              line: { color: "#63ACBE", width: 2, dash: "dot" },
             },
 
             {
@@ -896,7 +896,7 @@
               y0: 2.0,
               y1: 2.0,
               yref: "y2",
-              line: { color: "#F2C94C", width: 2, dash: "dash" },
+              line: { color: "#63ACBE", width: 2, dash: "dot" },
             },
           ],
           annotations: [],
@@ -912,6 +912,30 @@
           },
           hovermode: true,
         };
+
+        layout.annotations.push({
+          x: yearRange.min + 4,
+          xref: "x",
+          y: 2.05,
+          yref: "y2",
+          text: "2.0°C Limit",
+          showarrow: false,
+          font: { size: 10, color: "#63ACBE" },
+          xanchor: "center",
+          xshift: 5,
+        });
+
+        layout.annotations.push({
+          x: yearRange.min + 4,
+          xref: "x",
+          y: 1.55,
+          yref: "y2",
+          text: "1.5°C Target",
+          showarrow: false,
+          font: { size: 10, color: "#63ACBE" },
+          xanchor: "center",
+          xshift: 5,
+        });
 
         milestones.forEach((m) => {
           layout.annotations.push({
@@ -1126,7 +1150,7 @@
             d.iso_code,
           ]),
           hovertemplate:
-            "<b>%{text}</b><br>%{customdata[0]} tCO₂eq per Capita<extra></extra>",
+            "<b>%{text}</b><br>%{customdata[0]} tCO₂e per Capita<extra></extra>",
           colorscale: discreteColorscale,
           zmin: COLOR_CMIN,
           zmax: COLOR_CMAX,
@@ -1171,7 +1195,7 @@
             },
 
             hovertemplate:
-              "<b>%{text}</b><br>%{customdata[1]} tCO₂eq per Capita<extra></extra>",
+              "<b>%{text}</b><br>%{customdata[1]} tCO₂e per Capita<extra></extra>",
             hoverlabel: HOVER_LABEL_STYLE,
 
             name: "Tiny countries",
@@ -1219,7 +1243,7 @@
               tickvals: [0, 2, 5, 8, 12, 16, 20, 25, 30, 40, 60],
               ticktext: [0, 2, 5, 8, 12, 16, 20, 25, 30, 40, "60+"],
               title: {
-                text: "Emissions per Capita (tCO₂eq)",
+                text: "Emissions per Capita (tCO₂e)",
                 side: "bottom",
                 font: { size: 11 },
                 standoff: 18,
@@ -1452,11 +1476,11 @@
         const gt = calculateGlobalTrend();
         const globalData = gt.find((d) => d.year === currentYear);
         let html =
-          '<div class="legend-item" style="background:#63ACBE"><span>Global Greenhouse Gas Emissions:</span><span class="legend-value">' +
+          '<div class="legend-item" style="background:#EE442F"><span>Global Greenhouse Gas Emissions:</span><span class="legend-value">' +
           (globalData ? globalData.emissions.toLocaleString() : "N/A") +
-          " MtCO₂eq</span></div>";
+          " MtCO₂e</span></div>";
         html +=
-          '<div class="legend-item" style="background:#EE442F"><span>Temperature Increase:</span><span class="legend-value">' +
+          '<div class="legend-item" style="background:#63ACBE"><span>Temperature Increase:</span><span class="legend-value">' +
           (globalData ? globalData.temperature.toFixed(2) : "N/A") +
           " °C</span></div>";
 
@@ -1468,7 +1492,7 @@
             selectedContinent +
             ' (Selected) Emissions:</span><span class="legend-value">' +
             (cd ? cd.emissions.toLocaleString() : "N/A") +
-            " MtCO₂eq</span></div>";
+            " MtCO₂e</span></div>";
         }
 
         legendContainer.innerHTML = html;
@@ -1516,10 +1540,10 @@
             <button class="close-btn" onclick="clearCountrySelection()">Close</button>
           </div>
           <div class="metrics">
-            <div class="metric-card blue" style="background:#63ACBE ; color: white "><div class="metric-label" style="color:white">Greenhouse Gas Emissions Total</div><div class="metric-value"style="color:white">${cd.emissions.toLocaleString()}</div><div class="metric-unit", style="color:white">MtCO₂eq</div></div>
-            <div class="metric-card red" style="background:#EE442F; color: white" ><div class="metric-label" style="color:white">Greenhouse Gas Emissions per Capita</div><div class="metric-value" style="color:white">${Math.round(
+            <div class="metric-card blue" style="background:#EE442F; color: white "><div class="metric-label" style="color:white">Greenhouse Gas Emissions Total</div><div class="metric-value"style="color:white">${cd.emissions.toLocaleString()}</div><div class="metric-unit", style="color:white">MtCO₂e</div></div>
+            <div class="metric-card red" style="background:#63ACBE; color: white" ><div class="metric-label" style="color:white">Greenhouse Gas Emissions per Capita</div><div class="metric-value" style="color:white">${Math.round(
               cd.emissions_per_capita * 1_000_000
-            ).toLocaleString()}</div><div class="metric-unit", style="color:white">tCO₂eq</div></div>
+            ).toLocaleString()}</div><div class="metric-unit", style="color:white">tCO₂e</div></div>
             <div class="metric-card purple" style="background:#601A4A; color: white">
             <div class="metric-label" style="color:white">Global Rank</div>
             <div class="metric-value" style="color:white">
@@ -1649,6 +1673,9 @@
       }
 
       function renderSectorCandlestick(iso, sector) {
+        const countryName =
+          allData.find((r) => r.iso_code === iso)?.country || iso;
+          
         const dist = calculateGlobalSectorValues(sector);
         const countrySeries = calculateCountrySectorSeries(
           iso,
@@ -1701,8 +1728,8 @@
           connectgaps: true,
           line: { color: "#dc2626", width: 3 },
           marker: { size: 4, color: "#dc2626" },
-          name: "Selected Country",
-          hovertemplate: "%{x}: %{y:.4f} tCO₂eq per Capita<extra></extra>",
+          name: countryName,
+          hovertemplate: "%{x}: %{y:.4f} tCO₂e per Capita<extra></extra>",
         });
 
         traces.push({
@@ -1728,7 +1755,7 @@
             categoryorder: "category ascending",
           },
           yaxis: {
-            title: "Sector Greenhouse Gas Emissions per Capita (tCO₂eq)",
+            title: "Sector Greenhouse Gas Emissions per Capita (tCO₂e)",
             showgrid: true,
             gridcolor: "#eef2f7",
             type: "log",
@@ -1886,7 +1913,7 @@
           connectgaps: true,
           line: { color: "#EE442F", width: 2.5 },
           marker: { size: 4, color: "#dc2626" },
-          hovertemplate: "%{x}: %{y:.4f} tCO₂eq per Capita<extra></extra>",
+          hovertemplate: "%{x}: %{y:.4f} tCO₂e per Capita<extra></extra>",
         });
 
         let globalMax = 0;
@@ -1935,7 +1962,7 @@
             categoryorder: "category ascending",
           },
           yaxis: {
-            title: "Greenhouse Gas Emissions per Capita (tCO₂eq)",
+            title: "Greenhouse Gas Emissions per Capita (tCO₂e)",
             showgrid: true,
             gridcolor: "#eef2f7",
             type: "log",
@@ -2042,7 +2069,7 @@
             line: { width: lineW, color: base },
             fillcolor: base + alpha,
             hovertemplate:
-              "%{x}: %{y:.4f} tCO₂eq per Capita<extra>" + s + "</extra>",
+              "%{x}: %{y:.4f} tCO₂e per Capita<extra>" + s + "</extra>",
           });
         });
 
@@ -2149,7 +2176,7 @@
             categoryorder: "category ascending",
           },
           yaxis: {
-            title: "Greenhouse Gas Emissions per Capita (tCO₂eq)",
+            title: "Greenhouse Gas Emissions per Capita (tCO₂e)",
             showgrid: true,
             gridcolor: "#eef2f7",
             range: [0, yMax],
